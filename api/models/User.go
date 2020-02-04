@@ -14,8 +14,11 @@ import (
 
 type User struct {
 	ID        uint32    `gorm:"primary_key;auto_increment" json:"id"`
-	Nickname  string    `gorm:"size:255;not null;unique" json:"nickname"`
+	CosmoID  string       `gorm:"size:8;not null;unique" json:"cosmo_id"`
 	Email     string    `gorm:"size:100;not null;unique" json:"email"`
+	FirstName string     `gorm:"size:30;not null;" json:"first_name"`
+	LastName  string     `gorm:"size:30;not null;" json:"last_name"`
+	Phone     string     `gorm:"size:30;not null;unique" json:"phone"`
 	Password  string    `gorm:"size:100;not null;" json:"password"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
@@ -40,8 +43,11 @@ func (u *User) BeforeSave() error {
 
 func (u *User) Prepare() {
 	u.ID = 0
-	u.Nickname = html.EscapeString(strings.TrimSpace(u.Nickname))
+	u.CosmoID = html.EscapeString(strings.TrimSpace(u.CosmoID))
+	u.FirstName = html.EscapeString(strings.TrimSpace(u.FirstName))
+	u.LastName = html.EscapeString(strings.TrimSpace(u.LastName))
 	u.Email = html.EscapeString(strings.TrimSpace(u.Email))
+	u.Phone = html.EscapeString(strings.TrimSpace(u.Phone))
 	u.CreatedAt = time.Now()
 	u.UpdatedAt = time.Now()
 }
@@ -49,26 +55,28 @@ func (u *User) Prepare() {
 func (u *User) Validate(action string) error {
 	switch strings.ToLower(action) {
 	case "update":
-		if u.Nickname == "" {
-			return errors.New("Required Nickname")
+		if u.FirstName == "" {
+			return errors.New("First name required")
+		}
+		if u.LastName == "" {
+			return errors.New("Last name required")
 		}
 		if u.Password == "" {
-			return errors.New("Required Password")
+			return errors.New("Password required")
 		}
 		if u.Email == "" {
-			return errors.New("Required Email")
+			return errors.New("Email required")
 		}
 		if err := checkmail.ValidateFormat(u.Email); err != nil {
-			return errors.New("Invalid Email")
+			return errors.New("Invalid email")
 		}
-
 		return nil
 	case "login":
 		if u.Password == "" {
-			return errors.New("Required Password")
+			return errors.New("Password required")
 		}
 		if u.Email == "" {
-			return errors.New("Required Email")
+			return errors.New("Email required")
 		}
 		if err := checkmail.ValidateFormat(u.Email); err != nil {
 			return errors.New("Invalid Email")
@@ -76,17 +84,20 @@ func (u *User) Validate(action string) error {
 		return nil
 
 	default:
-		if u.Nickname == "" {
-			return errors.New("Required Nickname")
+		if u.FirstName == "" {
+			return errors.New("First name required")
+		}
+		if u.LastName == "" {
+			return errors.New("Last name required")
 		}
 		if u.Password == "" {
-			return errors.New("Required Password")
+			return errors.New("Password required")
 		}
 		if u.Email == "" {
-			return errors.New("Required Email")
+			return errors.New("Email required")
 		}
 		if err := checkmail.ValidateFormat(u.Email); err != nil {
-			return errors.New("Invalid Email")
+			return errors.New("Invalid email")
 		}
 		return nil
 	}
@@ -133,10 +144,12 @@ func (u *User) UpdateAUser(db *gorm.DB, uid uint32) (*User, error) {
 	}
 	db = db.Debug().Model(&User{}).Where("id = ?", uid).Take(&User{}).UpdateColumns(
 		map[string]interface{}{
-			"password":  u.Password,
-			"nickname":  u.Nickname,
-			"email":     u.Email,
-			"update_at": time.Now(),
+			"password":   u.Password,
+			"first_name": u.FirstName,
+			"last_name":  u.LastName,
+			"phone":      u.Phone,
+			"email":      u.Email,
+			"update_at":  time.Now(),
 		},
 	)
 	if db.Error != nil {
