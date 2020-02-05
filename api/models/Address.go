@@ -9,26 +9,32 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type Post struct {
+type Address struct {
 	ID        uint64    `gorm:"primary_key;auto_increment" json:"id"`
-	Title     string    `gorm:"size:255;not null;unique" json:"title"`
-	Content   string    `gorm:"size:255;not null;" json:"content"`
-	Author    User      `json:"author"`
-	AuthorID  uint32    `sql:"type:int REFERENCES users(id)" json:"author_id"`
+	LineOne     string    `gorm:"size:255;not null;" json:"line_one"`
+	LineTwo   string    `gorm:"size:255;" json:"line_two"`
+	UnitNumber   string    `gorm:"size:255;" json:"unit_number"`
+	BusinessName   string    `gorm:"size:255;" json:"business_name"`
+	AttentionTo   string    `gorm:"size:255;" json:"attention_to"`
+	User    User      `json:"user"`
+	UserID  uint32    `sql:"type:int REFERENCES users(id)" json:"user_id"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
-func (p *Post) Prepare() {
+func (p *Address) Prepare() {
 	p.ID = 0
-	p.Title = html.EscapeString(strings.TrimSpace(p.Title))
-	p.Content = html.EscapeString(strings.TrimSpace(p.Content))
-	p.Author = User{}
+	p.LineOne = html.EscapeString(strings.TrimSpace(p.LineOne))
+	p.LineTwo = html.EscapeString(strings.TrimSpace(p.LineTwo))
+	p.UnitNumber = html.EscapeString(strings.TrimSpace(p.UnitNumber))
+	p.BusinessName = html.EscapeString(strings.TrimSpace(p.BusinessName))
+	p.AttentionTo = html.EscapeString(strings.TrimSpace(p.AttentionTo))
+	p.User = User{}
 	p.CreatedAt = time.Now()
 	p.UpdatedAt = time.Now()
 }
 
-func (p *Post) Validate() error {
+func (p *Address) Validate() error {
 
 	if p.Title == "" {
 		return errors.New("Required Title")
@@ -42,7 +48,7 @@ func (p *Post) Validate() error {
 	return nil
 }
 
-func (p *Post) SavePost(db *gorm.DB) (*Post, error) {
+func (p *Address) SavePost(db *gorm.DB) (*Post, error) {
 	var err error
 	err = db.Debug().Model(&Post{}).Create(&p).Error
 	if err != nil {
@@ -57,7 +63,7 @@ func (p *Post) SavePost(db *gorm.DB) (*Post, error) {
 	return p, nil
 }
 
-func (p *Post) FindAllPosts(db *gorm.DB) (*[]Post, error) {
+func (p *Address) FindAllPosts(db *gorm.DB) (*[]Post, error) {
 	var err error
 	posts := []Post{}
 	err = db.Debug().Model(&Post{}).Limit(100).Find(&posts).Error
@@ -75,7 +81,7 @@ func (p *Post) FindAllPosts(db *gorm.DB) (*[]Post, error) {
 	return &posts, nil
 }
 
-func (p *Post) FindPostByID(db *gorm.DB, pid uint64) (*Post, error) {
+func (p *Address) FindPostByID(db *gorm.DB, pid uint64) (*Post, error) {
 	var err error
 	err = db.Debug().Model(&Post{}).Where("id = ?", pid).Take(&p).Error
 	if err != nil {
@@ -90,7 +96,7 @@ func (p *Post) FindPostByID(db *gorm.DB, pid uint64) (*Post, error) {
 	return p, nil
 }
 
-func (p *Post) UpdateAPost(db *gorm.DB) (*Post, error) {
+func (p *Address) UpdateAPost(db *gorm.DB) (*Post, error) {
 
 	var err error
 	// db = db.Debug().Model(&Post{}).Where("id = ?", pid).Take(&Post{}).UpdateColumns(
@@ -123,7 +129,7 @@ func (p *Post) UpdateAPost(db *gorm.DB) (*Post, error) {
 	return p, nil
 }
 
-func (p *Post) DeleteAPost(db *gorm.DB, pid uint64, uid uint32) (int64, error) {
+func (p *Address) DeleteAPost(db *gorm.DB, pid uint64, uid uint32) (int64, error) {
 
 	db = db.Debug().Model(&Post{}).Where("id = ? and author_id = ?", pid, uid).Take(&Post{}).Delete(&Post{})
 
