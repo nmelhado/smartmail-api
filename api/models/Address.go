@@ -21,8 +21,7 @@ type Address struct {
 	State     string    `gorm:"size:255;not null;" json:"state"`
 	ZipCode     string    `gorm:"size:255;not null;" json:"zip_code"`
 	Country     string    `gorm:"size:255;not null;" json:"country"`
-	User    User      `json:"user"`
-	UserID  uint32    `sql:"type:int REFERENCES users(id)" json:"user_id"`
+	Phone   string    `gorm:"size:255;" json:"phone"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
@@ -39,39 +38,41 @@ func (a *Address) Prepare() {
 	a.State = html.EscapeString(strings.TrimSpace(a.State))
 	a.ZipCode = html.EscapeString(strings.TrimSpace(a.ZipCode))
 	a.Country = html.EscapeString(strings.TrimSpace(a.Country)
-	a.User = User{}
+	a.Phone = html.EscapeString(strings.TrimSpace(a.Phone)
 	a.CreatedAt = time.Now()
 	a.UpdatedAt = time.Now()
 }
 
-func (p *Address) Validate() error {
+func (a *Address) Validate() error {
 
-	if p.Title == "" {
-		return errors.New("Required Title")
+	if a.LineOne == "" {
+		return errors.New("Address Line 1 Required")
 	}
-	if p.Content == "" {
-		return errors.New("Required Content")
+	if a.City == "" {
+		return errors.New("City Required")
 	}
-	if p.AuthorID < 1 {
-		return errors.New("Required Author")
+	if a.State == "" {
+		return errors.New("State Required")
+	}
+	if a.ZipCode == "" {
+		return errors.New("Zip Code Required")
+	}
+	if a.Country == "" {
+		return errors.New("Country Required")
 	}
 	return nil
 }
 
-func (p *Address) SavePost(db *gorm.DB) (*Post, error) {
+func (a *Address) SaveAddress(db *gorm.DB) (*Address, error) {
 	var err error
-	err = db.Debug().Model(&Post{}).Create(&p).Error
+	err = db.Debug().Model(&Address{}).Create(&a).Error
 	if err != nil {
-		return &Post{}, err
+		return &Address{}, err
 	}
-	if p.ID != 0 {
-		err = db.Debug().Model(&User{}).Where("id = ?", p.AuthorID).Take(&p.Author).Error
-		if err != nil {
-			return &Post{}, err
-		}
-	}
-	return p, nil
+	return a, nil
 }
+
+// Below still needs revision
 
 func (p *Address) FindAllPosts(db *gorm.DB) (*[]Post, error) {
 	var err error
