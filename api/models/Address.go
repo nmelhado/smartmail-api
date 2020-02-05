@@ -11,6 +11,7 @@ import (
 
 type Address struct {
 	ID        uint64    `gorm:"primary_key;auto_increment" json:"id"`
+	Nickname   string    `gorm:"size:255;" json:"nickname"`
 	LineOne     string    `gorm:"size:255;not null;" json:"line_one"`
 	LineTwo   string    `gorm:"size:255;" json:"line_two"`
 	UnitNumber   string    `gorm:"size:255;" json:"unit_number"`
