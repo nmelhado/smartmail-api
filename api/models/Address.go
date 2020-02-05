@@ -17,22 +17,31 @@ type Address struct {
 	UnitNumber   string    `gorm:"size:255;" json:"unit_number"`
 	BusinessName   string    `gorm:"size:255;" json:"business_name"`
 	AttentionTo   string    `gorm:"size:255;" json:"attention_to"`
+	City     string    `gorm:"size:255;not null;" json:"city"`
+	State     string    `gorm:"size:255;not null;" json:"state"`
+	ZipCode     string    `gorm:"size:255;not null;" json:"zip_code"`
+	Country     string    `gorm:"size:255;not null;" json:"country"`
 	User    User      `json:"user"`
 	UserID  uint32    `sql:"type:int REFERENCES users(id)" json:"user_id"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
-func (p *Address) Prepare() {
-	p.ID = 0
-	p.LineOne = html.EscapeString(strings.TrimSpace(p.LineOne))
-	p.LineTwo = html.EscapeString(strings.TrimSpace(p.LineTwo))
-	p.UnitNumber = html.EscapeString(strings.TrimSpace(p.UnitNumber))
-	p.BusinessName = html.EscapeString(strings.TrimSpace(p.BusinessName))
-	p.AttentionTo = html.EscapeString(strings.TrimSpace(p.AttentionTo))
-	p.User = User{}
-	p.CreatedAt = time.Now()
-	p.UpdatedAt = time.Now()
+func (a *Address) Prepare() {
+	a.ID = 0
+	a.Nickname = html.EscapeString(strings.TrimSpace(a.Nickname))
+	a.LineOne = html.EscapeString(strings.TrimSpace(a.LineOne))
+	a.LineTwo = html.EscapeString(strings.TrimSpace(a.LineTwo))
+	a.UnitNumber = html.EscapeString(strings.TrimSpace(a.UnitNumber))
+	a.BusinessName = html.EscapeString(strings.TrimSpace(a.BusinessName))
+	a.AttentionTo = html.EscapeString(strings.TrimSpace(a.AttentionTo))
+	a.City = html.EscapeString(strings.TrimSpace(a.City))
+	a.State = html.EscapeString(strings.TrimSpace(a.State))
+	a.ZipCode = html.EscapeString(strings.TrimSpace(a.ZipCode))
+	a.Country = html.EscapeString(strings.TrimSpace(a.Country)
+	a.User = User{}
+	a.CreatedAt = time.Now()
+	a.UpdatedAt = time.Now()
 }
 
 func (p *Address) Validate() error {
