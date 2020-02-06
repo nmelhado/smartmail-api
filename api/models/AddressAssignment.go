@@ -15,6 +15,7 @@ type AddressAssignment struct {
 	UserID  uint32    `sql:"type:int REFERENCES users(id)" json:"user_id"`
 	Address    Address      `json:"address"`
 	AddressID  uint32    `sql:"type:int REFERENCES addresses(id)" json:"address_id"`
+	// not how enum works, view bookmarked page
 	Status   enum    `gorm:"default:false;" json:"temporary"`
 	StartDate time.Time `gorm:"default:CURRENT_TIMESTAMP;not null;" json:"start_date"`
 	EndDate time.Time `gorm:"default:null" json:"start_date"`

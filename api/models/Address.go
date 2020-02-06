@@ -74,6 +74,8 @@ func (a *Address) SaveAddress(db *gorm.DB) (*Address, error) {
 
 // Below still needs revision
 
+// Below function may be unnecessary (comment it out, when back at a computer, for now)
+
 func (p *Address) FindAllPosts(db *gorm.DB) (*[]Post, error) {
 	var err error
 	posts := []Post{}
@@ -92,22 +94,16 @@ func (p *Address) FindAllPosts(db *gorm.DB) (*[]Post, error) {
 	return &posts, nil
 }
 
-func (p *Address) FindPostByID(db *gorm.DB, pid uint64) (*Post, error) {
+func (a *Address) FindAddressByID(db *gorm.DB, pid uint64) (*Address, error) {
 	var err error
-	err = db.Debug().Model(&Post{}).Where("id = ?", pid).Take(&p).Error
+	err = db.Debug().Model(&Address{}).Where("id = ?", pid).Take(&a).Error
 	if err != nil {
-		return &Post{}, err
+		return &Address{}, err
 	}
-	if p.ID != 0 {
-		err = db.Debug().Model(&User{}).Where("id = ?", p.AuthorID).Take(&p.Author).Error
-		if err != nil {
-			return &Post{}, err
-		}
-	}
-	return p, nil
+	return a, nil
 }
 
-func (p *Address) UpdateAPost(db *gorm.DB) (*Post, error) {
+func (a *Address) UpdateAddress(db *gorm.DB) (*Address, error) {
 
 	var err error
 	// db = db.Debug().Model(&Post{}).Where("id = ?", pid).Take(&Post{}).UpdateColumns(
@@ -127,26 +123,23 @@ func (p *Address) UpdateAPost(db *gorm.DB) (*Post, error) {
 	// 		return &Post{}, err
 	// 	}
 	// }
-	err = db.Debug().Model(&Post{}).Where("id = ?", p.ID).Updates(Post{Title: p.Title, Content: p.Content, UpdatedAt: time.Now()}).Error
+	
+	
+	// Need to change which values to update
+	err = db.Debug().Model(&Address{}).Where("id = ?", a.ID).Updates(Address{Title: a.Title, Content: a.Content, UpdatedAt: time.Now()}).Error
 	if err != nil {
-		return &Post{}, err
+		return &Address{}, err
 	}
-	if p.ID != 0 {
-		err = db.Debug().Model(&User{}).Where("id = ?", p.AuthorID).Take(&p.Author).Error
-		if err != nil {
-			return &Post{}, err
-		}
-	}
-	return p, nil
+	return a, nil
 }
 
-func (p *Address) DeleteAPost(db *gorm.DB, pid uint64, uid uint32) (int64, error) {
+func (a *Address) DeleteAddress(db *gorm.DB, aid uint64) (int64, error) {
 
-	db = db.Debug().Model(&Post{}).Where("id = ? and author_id = ?", pid, uid).Take(&Post{}).Delete(&Post{})
+	db = db.Debug().Model(&Address{}).Where("id = ?", aid).Take(&Address{}).Delete(&Address{})
 
 	if db.Error != nil {
 		if gorm.IsRecordNotFoundError(db.Error) {
-			return 0, errors.New("Post not found")
+			return 0, errors.New("Address not found")
 		}
 		return 0, db.Error
 	}
