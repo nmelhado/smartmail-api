@@ -36,6 +36,8 @@ func (aa *AddressAssignment) Prepare() {
 	aa.UpdatedAt = time.Now()
 }
 
+// need to create validate function
+
 func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignment, error) {
 	var err error
 	err = db.Debug().Model(&AddressAssignment{}).Create(&aa).Error
@@ -53,4 +55,53 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 		}
 	}
 	return aa, nil
+}
+
+func (aa *AddressAssignment) UpdateAddressAssignment(db *gorm.DB) (*AddressAssignment, error) {
+
+	var err error
+	// db = db.Debug().Model(&Post{}).Where("id = ?", pid).Take(&Post{}).UpdateColumns(
+	// 	map[string]interface{}{
+	// 		"title":      p.Title,
+	// 		"content":    p.Content,
+	// 		"updated_at": time.Now(),
+	// 	},
+	// )
+	// err = db.Debug().Model(&Post{}).Where("id = ?", pid).Take(&p).Error
+	// if err != nil {
+	// 	return &Post{}, err
+	// }
+	// if p.ID != 0 {
+	// 	err = db.Debug().Model(&User{}).Where("id = ?", p.AuthorID).Take(&p.Author).Error
+	// 	if err != nil {
+	// 		return &Post{}, err
+	// 	}
+	// }
+	err = db.Debug().Model(&AddressAssignment{}).Where("id = ?", aa.ID).Updates(AddressAssignment{Status: aa.Status, StartDate: aa.StartDate, EndDate: aa.EndDate, UpdatedAt: time.Now()}).Error
+	if err != nil {
+		return &AddressAssignment{}, err
+	}
+	return aa, nil
+}
+
+func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uint64) (*[]AddressAssignment, error) {
+	var err error
+	addresses := []AddressAssignment{}
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ?", uid).Limit(100).Find(&addresses).Error
+	if err != nil {
+		return &[]AddressAssignment{}, err
+	}
+	if len(addresses) > 0 {
+		for i, _ := range addresses {
+			err := db.Debug().Model(&User{}).Where("id = ?", addresses[i].UserID).Take(&addresses[i].User).Error
+			if err != nil {
+				return &[]AddressAssignment{}, err
+			}
+			err = db.Debug().Model(&Address{}).Where("id = ?", addresses[i].AddressID).Take(&addresses[i].Address).Error
+			if err != nil {
+				return &[]AddressAssignment{}, err
+			}
+		}
+	}
+	return &addresses, nil
 }

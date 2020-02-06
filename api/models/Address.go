@@ -94,9 +94,9 @@ func (p *Address) FindAllPosts(db *gorm.DB) (*[]Post, error) {
 	return &posts, nil
 }
 
-func (a *Address) FindAddressByID(db *gorm.DB, pid uint64) (*Address, error) {
+func (a *Address) FindAddressByID(db *gorm.DB, aid uint64) (*Address, error) {
 	var err error
-	err = db.Debug().Model(&Address{}).Where("id = ?", pid).Take(&a).Error
+	err = db.Debug().Model(&Address{}).Where("id = ?", aid).Take(&a).Error
 	if err != nil {
 		return &Address{}, err
 	}
