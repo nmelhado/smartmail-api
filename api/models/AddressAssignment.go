@@ -9,6 +9,19 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type status string
+
+const (
+	longTerm status = "long_term"
+	shortTerm status = "short_term"
+	packageOnlyLongTerm status = "package_only_long_term"
+	packageOnlyShortTerm status = "package_only_short_term"
+	mailOnlyLongTerm status = "mail_only_long_term"
+	mailOnlyShortTerm status = "mail_only_short_term"
+	expired status = "expired"
+	deleted status = "deleted"
+)
+
 type AddressAssignment struct {
 	ID        uint64    `gorm:"primary_key;auto_increment" json:"id"`
 	User    User      `json:"user"`
@@ -23,9 +36,18 @@ type AddressAssignment struct {
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
-var invalidStatus []string = []string{
-	"inactive",
-	"deleted"
+const validPackageStatus []string = []string{
+	longTerm,
+	shortTerm,
+	packageOnlyLongTerm,
+	packageOnlyShortTerm
+}
+
+const validMailStatus []string = []string{
+	longTerm,
+	shortTerm,
+	mailLongTerm,
+	mailShortTerm
 }
 
 func (aa *AddressAssignment) Prepare() {
@@ -100,7 +122,32 @@ func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, cosmoID st
 	}
 	
 	
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND staus NOT IN ? AND ? BETWEEN star_date AND end_date", user.id, invalidStatus, targetDate).Find(&address).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND staus IN ? AND ? BETWEEN star_date AND end_date", user.id, validMailStatus, targetDate).Find(&address).Error
+	if err != nil {
+		return &Address{}, err
+	}
+	if address.ID > 0 {
+		err := db.Debug().Model(&Address{}).Where("id = ?", address.AddressID).Take(&address.Address).Error
+		if err != nil {
+			return &Address{}, err
+		}
+		&address.User = user
+	}
+	return &address, nil
+}
+
+func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, cosmoID string, targetDate time.date) (*Address, error) {
+	var err error
+	var user User{}
+	address := AddressAssignment{}
+	
+	err = db.Debug().Model(&User{}).Where("ix_cosmo_id = ?", cosmoID).Take(&user).Error
+	if err != nil {
+		return &Address{}, err
+	}
+	
+	
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND staus IN ? AND ? BETWEEN star_date AND end_date", user.id, validPackageStatus, targetDate).Find(&address).Error
 	if err != nil {
 		return &Address{}, err
 	}
@@ -117,7 +164,7 @@ func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, cosmoID st
 func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uint64) (*[]AddressAssignment, error) {
 	var err error
 	addresses := []AddressAssignment{}
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ?", uid).Limit(100).Find(&addresses).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status <> ?", uid, deleted).Limit(100).Find(&addresses).Error
 	if err != nil {
 		return &[]AddressAssignment{}, err
 	}
