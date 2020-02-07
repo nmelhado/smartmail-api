@@ -23,7 +23,7 @@ type AddressAssignment struct {
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
-invalidStatus := []string{
+var invalidStatus []string = []string{
 	"inactive",
 	"deleted"
 }
