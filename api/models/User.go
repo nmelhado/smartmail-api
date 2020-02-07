@@ -14,7 +14,7 @@ import (
 
 type User struct {
 	ID        uint32    `gorm:"primary_key;auto_increment" json:"id"`
-	CosmoID  string       `gorm:"size:8;not null;unique" json:"cosmo_id"`
+	CosmoID  string       `gorm:"size:8;not null;unique;unique_index:ix_cosmo_id" json:"cosmo_id"`
 	Email     string    `gorm:"size:100;not null;unique" json:"email"`
 	FirstName string     `gorm:"size:30;not null;" json:"first_name"`
 	LastName  string     `gorm:"size:30;not null;" json:"last_name"`

@@ -23,6 +23,11 @@ type AddressAssignment struct {
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
+invalidStatus := []string{
+	"inactive",
+	"deleted"
+}
+
 func (aa *AddressAssignment) Prepare() {
 	aa.ID = 0
 	aa.User = User{}
@@ -82,6 +87,31 @@ func (aa *AddressAssignment) UpdateAddressAssignment(db *gorm.DB) (*AddressAssig
 		return &AddressAssignment{}, err
 	}
 	return aa, nil
+}
+
+func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, cosmoID string, targetDate time.date) (*Address, error) {
+	var err error
+	var user User{}
+	address := AddressAssignment{}
+	
+	err = db.Debug().Model(&User{}).Where("ix_cosmo_id = ?", cosmoID).Take(&user).Error
+	if err != nil {
+		return &Address{}, err
+	}
+	
+	
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND staus NOT IN ? AND ? BETWEEN star_date AND end_date", user.id, invalidStatus, targetDate).Find(&address).Error
+	if err != nil {
+		return &Address{}, err
+	}
+	if address.ID > 0 {
+		err := db.Debug().Model(&Address{}).Where("id = ?", address.AddressID).Take(&address.Address).Error
+		if err != nil {
+			return &Address{}, err
+		}
+		&address.User = user
+	}
+	return &address, nil
 }
 
 func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uint64) (*[]AddressAssignment, error) {
