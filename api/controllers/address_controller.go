@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/nmelhado/pinpoint-api/api/auth"
@@ -70,6 +71,7 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 
 	_, err = addressAssignment.SaveAddressAssignment(server.DB)
 	if err != nil {
+		_, _ = addressAssignment.Address.DeleteAddress(server.DB, createAddress.ID)
 		formattedError := formaterror.FormatError(err.Error())
 		responses.ERROR(w, http.StatusInternalServerError, formattedError)
 		return
@@ -77,18 +79,6 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Location", fmt.Sprintf("%s%s/%d", r.Host, r.URL.Path, createAddress.ID))
 	responses.JSON(w, http.StatusCreated, createAddress)
-}
-
-func (server *Server) GetAddresss(w http.ResponseWriter, r *http.Request) {
-
-	address := models.Address{}
-
-	addresss, err := address.FindAllAddresss(server.DB)
-	if err != nil {
-		responses.ERROR(w, http.StatusInternalServerError, err)
-		return
-	}
-	responses.JSON(w, http.StatusOK, addresss)
 }
 
 func (server *Server) GetAddressByID(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +99,85 @@ func (server *Server) GetAddressByID(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, addressReceived)
 }
 
-// !!!!!!!TODO!!!!!!!! Need to fix below as well as add a find by cosmo ID function
+func (server *Server) GetMailingAddressByCosmoID(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	cosmoID, err := strconv.ParseUint(vars["cosmo_id"], 10, 64)
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+	date, err := time.Parse("2006-01-02", vars["date"])
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+	user := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("cosmo_id = ?", cosmoID).Take(&user).Error
+
+	reqUid, err := auth.ExtractTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+	reqUser := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUid).Take(&reqUser).Error
+
+	if user.ID != reqUser.ID && reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	address := models.AddressAssignment{}
+	addressReceived, err := address.FindMailingAddressWithCosmo(server.DB, user, date)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+	responses.JSON(w, http.StatusOK, addressReceived)
+}
+
+func (server *Server) GetPackageAddressByCosmoID(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	cosmoID, err := strconv.ParseUint(vars["cosmo_id"], 10, 64)
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+	date, err := time.Parse("2006-01-02", vars["date"])
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+	user := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("cosmo_id = ?", cosmoID).Take(&user).Error
+
+	reqUid, err := auth.ExtractTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+	reqUser := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUid).Take(&reqUser).Error
+
+	if user.ID != reqUser.ID && reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	address := models.AddressAssignment{}
+	addressReceived, err := address.FindPackageAddressWithCosmo(server.DB, user, date)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+	responses.JSON(w, http.StatusOK, addressReceived)
+}
 
 func (server *Server) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 
@@ -129,16 +197,16 @@ func (server *Server) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the address exist
-	address := models.Address{}
-	err = server.DB.Debug().Model(models.Address{}).Where("id = ?", aid).Take(&address).Error
+	// Check if the address assignment exist
+	addressAssignment := models.AddressAssignment{}
+	err = server.DB.Debug().Model(models.AddressAssignment{}).Where("address_id = ?", aid).Take(&addressAssignment).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusNotFound, errors.New("Address not found"))
 		return
 	}
 
 	// If a user attempt to update a address not belonging to him
-	if uid != address.AuthorID {
+	if uid != addressAssignment.UserID {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
@@ -157,12 +225,6 @@ func (server *Server) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//Also check if the request user id is equal to the one gotten from token
-	if uid != addressUpdate.AuthorID {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
-		return
-	}
-
 	addressUpdate.Prepare()
 	err = addressUpdate.Validate()
 	if err != nil {
@@ -170,9 +232,9 @@ func (server *Server) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	addressUpdate.ID = address.ID //this is important to tell the model the address id to update, the other update field are set above
+	addressUpdate.ID = aid //this is important to tell the model the address id to update, the other update field are set above
 
-	addressUpdated, err := addressUpdate.UpdateAAddress(server.DB)
+	addressUpdated, err := addressUpdate.UpdateAddress(server.DB)
 
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
@@ -201,19 +263,20 @@ func (server *Server) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if the address exist
-	address := models.Address{}
-	err = server.DB.Debug().Model(models.Address{}).Where("id = ?", aid).Take(&address).Error
+	addressAssignment := models.AddressAssignment{}
+	err = server.DB.Debug().Model(models.Address{}).Where("address_id = ?", aid).Take(&addressAssignment).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusNotFound, errors.New("Unauthorized"))
 		return
 	}
 
 	// Is the authenticated user, the owner of this address?
-	if uid != address.AuthorID {
+	if uid != addressAssignment.UserID {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
-	_, err = address.DeleteAAddress(server.DB, aid, uid)
+
+	_, err = addressAssignment.Address.DeleteAddress(server.DB, aid)
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 		return

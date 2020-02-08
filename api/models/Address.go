@@ -7,33 +7,34 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"gopkg.in/guregu/null.v3"
 )
 
 type Address struct {
-	ID           uint64    `gorm:"primary_key;auto_increment" json:"id"`
-	Nickname     string    `gorm:"size:255;" json:"nickname"`
-	LineOne      string    `gorm:"size:255;not null;" json:"line_one"`
-	LineTwo      string    `gorm:"size:255;" json:"line_two"`
-	UnitNumber   string    `gorm:"size:255;" json:"unit_number"`
-	BusinessName string    `gorm:"size:255;" json:"business_name"`
-	AttentionTo  string    `gorm:"size:255;" json:"attention_to"`
-	City         string    `gorm:"size:255;not null;" json:"city"`
-	State        string    `gorm:"size:255;not null;" json:"state"`
-	ZipCode      string    `gorm:"size:255;not null;" json:"zip_code"`
-	Country      string    `gorm:"size:255;not null;" json:"country"`
-	Phone        string    `gorm:"size:255;" json:"phone"`
-	CreatedAt    time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt    time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID           uint64      `gorm:"primary_key;auto_increment" json:"id"`
+	Nickname     null.String `gorm:"size:255;" json:"nickname"`
+	LineOne      string      `gorm:"size:255;not null;" json:"line_one"`
+	LineTwo      null.String `gorm:"size:255;" json:"line_two"`
+	UnitNumber   null.String `gorm:"size:255;" json:"unit_number"`
+	BusinessName null.String `gorm:"size:255;" json:"business_name"`
+	AttentionTo  null.String `gorm:"size:255;" json:"attention_to"`
+	City         string      `gorm:"size:255;not null;" json:"city"`
+	State        string      `gorm:"size:255;not null;" json:"state"`
+	ZipCode      string      `gorm:"size:255;not null;" json:"zip_code"`
+	Country      string      `gorm:"size:255;not null;" json:"country"`
+	Phone        string      `gorm:"size:255;" json:"phone"`
+	CreatedAt    time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt    time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 func (a *Address) Prepare() {
 	a.ID = 0
-	a.Nickname = html.EscapeString(strings.TrimSpace(a.Nickname))
+	a.Nickname.String = html.EscapeString(strings.TrimSpace(a.Nickname.String))
 	a.LineOne = html.EscapeString(strings.TrimSpace(a.LineOne))
-	a.LineTwo = html.EscapeString(strings.TrimSpace(a.LineTwo))
-	a.UnitNumber = html.EscapeString(strings.TrimSpace(a.UnitNumber))
-	a.BusinessName = html.EscapeString(strings.TrimSpace(a.BusinessName))
-	a.AttentionTo = html.EscapeString(strings.TrimSpace(a.AttentionTo))
+	a.LineTwo.String = html.EscapeString(strings.TrimSpace(a.LineTwo.String))
+	a.UnitNumber.String = html.EscapeString(strings.TrimSpace(a.UnitNumber.String))
+	a.BusinessName.String = html.EscapeString(strings.TrimSpace(a.BusinessName.String))
+	a.AttentionTo.String = html.EscapeString(strings.TrimSpace(a.AttentionTo.String))
 	a.City = html.EscapeString(strings.TrimSpace(a.City))
 	a.State = html.EscapeString(strings.TrimSpace(a.State))
 	a.ZipCode = html.EscapeString(strings.TrimSpace(a.ZipCode))

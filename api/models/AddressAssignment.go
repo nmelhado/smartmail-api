@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"gopkg.in/guregu/null.v3"
 )
 
 type status string
@@ -34,12 +35,12 @@ func (s status) Value() (driver.Value, error) {
 type AddressAssignment struct {
 	ID        uint64    `gorm:"primary_key;auto_increment" json:"id"`
 	User      User      `json:"user"`
-	UserID    uint32    `sql:"type:int REFERENCES users(id)" json:"user_id"`
+	UserID    uint64    `sql:"type:int REFERENCES users(id)" json:"user_id"`
 	Address   Address   `json:"address"`
-	AddressID uint32    `sql:"type:int REFERENCES addresses(id)" json:"address_id"`
+	AddressID uint64    `sql:"type:int REFERENCES addresses(id)" json:"address_id"`
 	Status    status    `sql:"type:status"; json:"status";`
-	StartDate time.Time `gorm:"default:CURRENT_TIMESTAMP;not null;" json:"start_date"`
-	EndDate   time.Time `gorm:"default:null" json:"end_date"`
+	StartDate null.Time `gorm:"default:CURRENT_TIMESTAMP;not null;" json:"start_date"`
+	EndDate   null.Time `gorm:"default:null" json:"end_date"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
@@ -92,14 +93,14 @@ func (aa *AddressAssignment) Validate() error {
 	if aa.UserID == 0 {
 		return errors.New("User required")
 	}
-	if aa.Status.Value() == "" {
+	if status, err := aa.Status.Value(); status == "" || err != nil {
 		return errors.New("Status required")
 	}
-	if aa.StartDate == null {
+	if !aa.StartDate.Valid {
 		return errors.New("Start date required")
 	}
 	if contains(temporaryStatus, aa.Status) {
-		if aa.EndDate == null {
+		if aa.EndDate.Valid {
 			return errors.New("End date required for temporary address")
 		}
 	}
@@ -128,23 +129,6 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 func (aa *AddressAssignment) UpdateAddressAssignment(db *gorm.DB) (*AddressAssignment, error) {
 
 	var err error
-	// db = db.Debug().Model(&Post{}).Where("id = ?", pid).Take(&Post{}).UpdateColumns(
-	// 	map[string]interface{}{
-	// 		"title":      p.Title,
-	// 		"content":    p.Content,
-	// 		"updated_at": time.Now(),
-	// 	},
-	// )
-	// err = db.Debug().Model(&Post{}).Where("id = ?", pid).Take(&p).Error
-	// if err != nil {
-	// 	return &Post{}, err
-	// }
-	// if p.ID != 0 {
-	// 	err = db.Debug().Model(&User{}).Where("id = ?", p.AuthorID).Take(&p.Author).Error
-	// 	if err != nil {
-	// 		return &Post{}, err
-	// 	}
-	// }
 	err = db.Debug().Model(&AddressAssignment{}).Where("id = ?", aa.ID).Updates(AddressAssignment{Status: aa.Status, StartDate: aa.StartDate, EndDate: aa.EndDate, UpdatedAt: time.Now()}).Error
 	if err != nil {
 		return &AddressAssignment{}, err

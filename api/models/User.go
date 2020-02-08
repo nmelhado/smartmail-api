@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql/driver"
 	"errors"
 	"html"
 	"log"
@@ -12,13 +13,32 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type authority string
+
+const (
+	UserAuth     authority = "user_auth"
+	MailerAuth   authority = "mailer_auth"
+	AdminAuth    authority = "admin_auth"
+	EngineerAuth authority = "engineer_auth"
+)
+
+func (a *authority) Scan(value interface{}) error {
+	*a = authority(value.([]byte))
+	return nil
+}
+
+func (a authority) Value() (driver.Value, error) {
+	return string(a), nil
+}
+
 type User struct {
-	ID        uint32    `gorm:"primary_key;auto_increment" json:"id"`
+	ID        uint64    `gorm:"primary_key;auto_increment" json:"id"`
 	CosmoID   string    `gorm:"size:8;not null;unique;unique_index:ix_cosmo_id" json:"cosmo_id"`
 	Email     string    `gorm:"size:100;not null;unique" json:"email"`
 	FirstName string    `gorm:"size:30;not null;" json:"first_name"`
 	LastName  string    `gorm:"size:30;not null;" json:"last_name"`
 	Phone     string    `gorm:"size:30;not null;unique" json:"phone"`
+	Authority authority `sql:"type:authority"; json:"authority";`
 	Password  string    `gorm:"size:100;not null;" json:"password"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
@@ -48,6 +68,7 @@ func (u *User) Prepare() {
 	u.LastName = html.EscapeString(strings.TrimSpace(u.LastName))
 	u.Email = html.EscapeString(strings.TrimSpace(u.Email))
 	u.Phone = html.EscapeString(strings.TrimSpace(u.Phone))
+	u.Authority = UserAuth
 	u.CreatedAt = time.Now()
 	u.UpdatedAt = time.Now()
 }
@@ -63,6 +84,9 @@ func (u *User) Validate(action string) error {
 		}
 		if u.Password == "" {
 			return errors.New("Password required")
+		}
+		if u.Phone == "" {
+			return errors.New("Phone required")
 		}
 		if u.Email == "" {
 			return errors.New("Email required")
@@ -92,6 +116,9 @@ func (u *User) Validate(action string) error {
 		}
 		if u.Password == "" {
 			return errors.New("Password required")
+		}
+		if u.Phone == "" {
+			return errors.New("Phone required")
 		}
 		if u.Email == "" {
 			return errors.New("Email required")
