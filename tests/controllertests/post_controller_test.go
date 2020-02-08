@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/victorsteven/fullstack/api/models"
+	"github.com/nmelhado/pinpoint-api/api/models"
 	"gopkg.in/go-playground/assert.v1"
 )
 
@@ -73,19 +73,19 @@ func TestCreatePost(t *testing.T) {
 			inputJSON:    `{"title": "", "content": "The content", "author_id": 1}`,
 			statusCode:   422,
 			tokenGiven:   tokenString,
-			errorMessage: "Required Title",
+			errorMessage: "required Title",
 		},
 		{
 			inputJSON:    `{"title": "This is a title", "content": "", "author_id": 1}`,
 			statusCode:   422,
 			tokenGiven:   tokenString,
-			errorMessage: "Required Content",
+			errorMessage: "required Content",
 		},
 		{
 			inputJSON:    `{"title": "This is an awesome title", "content": "the content"}`,
 			statusCode:   422,
 			tokenGiven:   tokenString,
-			errorMessage: "Required Author",
+			errorMessage: "required Author",
 		},
 		{
 			// When user 2 uses user 1 token
@@ -295,14 +295,14 @@ func TestUpdatePost(t *testing.T) {
 			updateJSON:   `{"title":"", "content": "This is the updated content", "author_id": 1}`,
 			statusCode:   422,
 			tokenGiven:   tokenString,
-			errorMessage: "Required Title",
+			errorMessage: "required Title",
 		},
 		{
 			id:           strconv.Itoa(int(AuthPostID)),
 			updateJSON:   `{"title":"Awesome title", "content": "", "author_id": 1}`,
 			statusCode:   422,
 			tokenGiven:   tokenString,
-			errorMessage: "Required Content",
+			errorMessage: "required Content",
 		},
 		{
 			id:           strconv.Itoa(int(AuthPostID)),

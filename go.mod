@@ -1,4 +1,4 @@
-module github.com/victorsteven/fullstack
+module github.com/nmelhado/pinpoint-api
 
 go 1.13
 

@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/victorsteven/fullstack/api/models"
+	"github.com/nmelhado/pinpoint-api/api/models"
 	"gopkg.in/go-playground/assert.v1"
 )
 
@@ -53,17 +53,17 @@ func TestCreateUser(t *testing.T) {
 		{
 			inputJSON:    `{"nickname": "", "email": "kan@gmail.com", "password": "password"}`,
 			statusCode:   422,
-			errorMessage: "Required Nickname",
+			errorMessage: "required Nickname",
 		},
 		{
 			inputJSON:    `{"nickname": "Kan", "email": "", "password": "password"}`,
 			statusCode:   422,
-			errorMessage: "Required Email",
+			errorMessage: "required Email",
 		},
 		{
 			inputJSON:    `{"nickname": "Kan", "email": "kan@gmail.com", "password": ""}`,
 			statusCode:   422,
-			errorMessage: "Required Password",
+			errorMessage: "required Password",
 		},
 	}
 
@@ -228,7 +228,7 @@ func TestUpdateUser(t *testing.T) {
 			updateJSON:   `{"nickname":"Woman", "email": "woman@gmail.com", "password": ""}`,
 			statusCode:   422,
 			tokenGiven:   tokenString,
-			errorMessage: "Required Password",
+			errorMessage: "required Password",
 		},
 		{
 			// When no token was passed
@@ -274,14 +274,14 @@ func TestUpdateUser(t *testing.T) {
 			updateJSON:   `{"nickname": "", "email": "kan@gmail.com", "password": "password"}`,
 			statusCode:   422,
 			tokenGiven:   tokenString,
-			errorMessage: "Required Nickname",
+			errorMessage: "required Nickname",
 		},
 		{
 			id:           strconv.Itoa(int(AuthID)),
 			updateJSON:   `{"nickname": "Kan", "email": "", "password": "password"}`,
 			statusCode:   422,
 			tokenGiven:   tokenString,
-			errorMessage: "Required Email",
+			errorMessage: "required Email",
 		},
 		{
 			id:         "unknwon",

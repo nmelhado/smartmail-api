@@ -1,9 +1,8 @@
 package models
 
 import (
+	"database/sql/driver"
 	"errors"
-	"html"
-	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -12,58 +11,100 @@ import (
 type status string
 
 const (
-	longTerm status = "long_term"
-	shortTerm status = "short_term"
-	packageOnlyLongTerm status = "package_only_long_term"
-	packageOnlyShortTerm status = "package_only_short_term"
-	mailOnlyLongTerm status = "mail_only_long_term"
-	mailOnlyShortTerm status = "mail_only_short_term"
-	expired status = "expired"
-	deleted status = "deleted"
+	longTerm             status = "long_term"
+	temporary            status = "temporary_term"
+	packageOnlyLongTerm  status = "package_only_long_term"
+	packageOnlyTemporary status = "package_only_temporary_term"
+	mailOnlyLongTerm     status = "mail_only_long_term"
+	mailOnlyTemporary    status = "mail_only_temporary_term"
+	expired              status = "expired"
+	deleted              status = "deleted"
 )
 
+func (s *status) Scan(value interface{}) error {
+	*s = status(value.([]byte))
+	return nil
+}
+
+func (s status) Value() (driver.Value, error) {
+	return string(s), nil
+}
+
+// refer to link for `status` field: https://github.com/jinzhu/gorm/issues/1978
 type AddressAssignment struct {
 	ID        uint64    `gorm:"primary_key;auto_increment" json:"id"`
-	User    User      `json:"user"`
-	UserID  uint32    `sql:"type:int REFERENCES users(id)" json:"user_id"`
-	Address    Address      `json:"address"`
-	AddressID  uint32    `sql:"type:int REFERENCES addresses(id)" json:"address_id"`
-	// not how enum works, view bookmarked page
-	Status   enum    `gorm:"default:false;" json:"temporary"`
+	User      User      `json:"user"`
+	UserID    uint32    `sql:"type:int REFERENCES users(id)" json:"user_id"`
+	Address   Address   `json:"address"`
+	AddressID uint32    `sql:"type:int REFERENCES addresses(id)" json:"address_id"`
+	Status    status    `sql:"type:status"; json:"status";`
 	StartDate time.Time `gorm:"default:CURRENT_TIMESTAMP;not null;" json:"start_date"`
-	EndDate time.Time `gorm:"default:null" json:"start_date"`
+	EndDate   time.Time `gorm:"default:null" json:"end_date"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
-const validPackageStatus []string = []string{
+var validPackageStatus []status = []status{
 	longTerm,
-	shortTerm,
+	temporary,
 	packageOnlyLongTerm,
-	packageOnlyShortTerm
+	packageOnlyTemporary,
 }
 
-const validMailStatus []string = []string{
+var validMailStatus []status = []status{
 	longTerm,
-	shortTerm,
-	mailLongTerm,
-	mailShortTerm
+	temporary,
+	mailOnlyLongTerm,
+	mailOnlyTemporary,
+}
+
+var temporaryStatus []status = []status{
+	temporary,
+	packageOnlyTemporary,
+	mailOnlyTemporary,
+}
+
+func contains(arr []status, status status) bool {
+	for _, a := range arr {
+		if a == status {
+			return true
+		}
+	}
+	return false
 }
 
 func (aa *AddressAssignment) Prepare() {
 	aa.ID = 0
 	aa.User = User{}
 	aa.Address = Address{}
-
-	aa.Status = html.EscapeString(strings.TrimSpace(aa.Status))
-	
-	aa.StartDate = time.Now()
-	aa.EndDate = time.Now()
+	aa.Status = aa.Status
+	aa.StartDate = aa.StartDate
+	aa.EndDate = aa.EndDate
 	aa.CreatedAt = time.Now()
 	aa.UpdatedAt = time.Now()
 }
 
-// need to create validate function
+func (aa *AddressAssignment) Validate() error {
+
+	if aa.AddressID == 0 {
+		return errors.New("Address required")
+	}
+	if aa.UserID == 0 {
+		return errors.New("User required")
+	}
+	if aa.Status.Value() == "" {
+		return errors.New("Status required")
+	}
+	if aa.StartDate == null {
+		return errors.New("Start date required")
+	}
+	if contains(temporaryStatus, aa.Status) {
+		if aa.EndDate == null {
+			return errors.New("End date required for temporary address")
+		}
+	}
+	return nil
+}
 
 func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignment, error) {
 	var err error
@@ -111,52 +152,38 @@ func (aa *AddressAssignment) UpdateAddressAssignment(db *gorm.DB) (*AddressAssig
 	return aa, nil
 }
 
-func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, cosmoID string, targetDate time.date) (*Address, error) {
+func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
 	var err error
-	var user User{}
 	address := AddressAssignment{}
-	
-	err = db.Debug().Model(&User{}).Where("ix_cosmo_id = ?", cosmoID).Take(&user).Error
+
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND staus IN ? AND ? BETWEEN star_date AND end_date", user.ID, validMailStatus, targetDate).Find(&address).Error
 	if err != nil {
-		return &Address{}, err
-	}
-	
-	
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND staus IN ? AND ? BETWEEN star_date AND end_date", user.id, validMailStatus, targetDate).Find(&address).Error
-	if err != nil {
-		return &Address{}, err
+		return &AddressAssignment{}, err
 	}
 	if address.ID > 0 {
 		err := db.Debug().Model(&Address{}).Where("id = ?", address.AddressID).Take(&address.Address).Error
 		if err != nil {
-			return &Address{}, err
+			return &AddressAssignment{}, err
 		}
-		&address.User = user
+		address.User = user
 	}
 	return &address, nil
 }
 
-func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, cosmoID string, targetDate time.date) (*Address, error) {
+func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
 	var err error
-	var user User{}
 	address := AddressAssignment{}
-	
-	err = db.Debug().Model(&User{}).Where("ix_cosmo_id = ?", cosmoID).Take(&user).Error
+
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND staus IN ? AND ? BETWEEN star_date AND end_date", user.ID, validPackageStatus, targetDate).Find(&address).Error
 	if err != nil {
-		return &Address{}, err
-	}
-	
-	
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND staus IN ? AND ? BETWEEN star_date AND end_date", user.id, validPackageStatus, targetDate).Find(&address).Error
-	if err != nil {
-		return &Address{}, err
+		return &AddressAssignment{}, err
 	}
 	if address.ID > 0 {
 		err := db.Debug().Model(&Address{}).Where("id = ?", address.AddressID).Take(&address.Address).Error
 		if err != nil {
-			return &Address{}, err
+			return &AddressAssignment{}, err
 		}
-		&address.User = user
+		address.User = user
 	}
 	return &address, nil
 }
