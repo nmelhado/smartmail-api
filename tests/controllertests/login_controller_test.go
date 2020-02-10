@@ -15,7 +15,7 @@ import (
 
 func TestSignIn(t *testing.T) {
 
-	err := refreshUserTable()
+	err := refreshTables()
 	if err != nil {
 		log.Fatal(err)
 	}
