@@ -6,14 +6,14 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	uuid "github.com/satori/go.uuid"
 )
 
-func CreateToken(user_id uint64) (string, error) {
+func CreateToken(user_id uuid.UUID) (string, error) {
 	claims := jwt.MapClaims{}
 	claims["authorized"] = true
 	claims["user_id"] = user_id
@@ -53,7 +53,7 @@ func ExtractToken(r *http.Request) string {
 	return ""
 }
 
-func ExtractTokenID(r *http.Request) (uint64, error) {
+func ExtractTokenID(r *http.Request) (uuid.UUID, error) {
 
 	tokenString := ExtractToken(r)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -63,17 +63,16 @@ func ExtractTokenID(r *http.Request) (uint64, error) {
 		return []byte(os.Getenv("API_SECRET")), nil
 	})
 	if err != nil {
-		return 0, err
+		return uuid.UUID{}, err
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
-		uid, err := strconv.ParseUint(fmt.Sprintf("%.0f", claims["user_id"]), 10, 64)
-		if err != nil {
-			return 0, err
-		}
+		temp := fmt.Sprintf("%.0f", claims["user_id"])
+		fmt.Print(temp)
+		uid := uuid.FromStringOrNil(fmt.Sprintf("%.0f", claims["user_id"]))
 		return uid, nil
 	}
-	return 0, nil
+	return uuid.UUID{}, nil
 }
 
 //Pretty display the claims licely in the terminal

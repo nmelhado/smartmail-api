@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
 	"gopkg.in/guregu/null.v3"
 )
 
@@ -35,10 +36,10 @@ func (s status) Value() (driver.Value, error) {
 type AddressAssignment struct {
 	ID        uint64    `gorm:"primary_key;auto_increment" json:"id"`
 	User      User      `json:"user"`
-	UserID    uint64    `sql:"type:int REFERENCES users(id)" json:"user_id"`
+	UserID    uuid.UUID `gorm:"type:uuid" sql:"type:uuid REFERENCES users(id)" json:"user_id"`
 	Address   Address   `json:"address"`
 	AddressID uint64    `sql:"type:int REFERENCES addresses(id)" json:"address_id"`
-	Status    status    `sql:"type:status"; json:"status";`
+	Status    status    `sql:"type:status" json:"status"`
 	StartDate null.Time `gorm:"default:CURRENT_TIMESTAMP;not null;" json:"start_date"`
 	EndDate   null.Time `gorm:"default:null" json:"end_date"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
@@ -78,18 +79,11 @@ func (aa *AddressAssignment) Prepare() {
 	aa.ID = 0
 	aa.User = User{}
 	aa.Address = Address{}
-	aa.Status = aa.Status
-	aa.StartDate = aa.StartDate
-	aa.EndDate = aa.EndDate
 	aa.CreatedAt = time.Now()
 	aa.UpdatedAt = time.Now()
 }
 
 func (aa *AddressAssignment) Validate() error {
-
-	if aa.UserID == 0 {
-		return errors.New("User required")
-	}
 	if status, err := aa.Status.Value(); status == "" || err != nil {
 		return errors.New("Status required")
 	}

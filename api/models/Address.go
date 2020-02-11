@@ -39,7 +39,7 @@ func (a *Address) Prepare() {
 	a.State = html.EscapeString(strings.TrimSpace(a.State))
 	a.ZipCode = html.EscapeString(strings.TrimSpace(a.ZipCode))
 	a.Country = html.EscapeString(strings.TrimSpace(a.Country))
-	a.Phone = html.EscapeString(strings.TrimSpace(a.Phone))
+	a.Phone.String = html.EscapeString(strings.TrimSpace(a.Phone.String))
 	a.CreatedAt = time.Now()
 	a.UpdatedAt = time.Now()
 }

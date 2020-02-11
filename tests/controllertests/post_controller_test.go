@@ -17,7 +17,7 @@ import (
 
 func TestCreatePost(t *testing.T) {
 
-	err := refreshUserAndPostTable()
+	err := refreshTables()
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -101,7 +101,7 @@ func TestUpdateAUser(t *testing.T) {
 	assert.Equal(t, updatedUser.Nickname, userUpdate.Nickname)
 }
 
-func TestDeleteAUser(t *testing.T) {
+func TestDeleteUser(t *testing.T) {
 
 	err := refreshUserTable()
 	if err != nil {
@@ -114,7 +114,7 @@ func TestDeleteAUser(t *testing.T) {
 		log.Fatalf("Cannot seed user: %v\n", err)
 	}
 
-	isDeleted, err := userInstance.DeleteAUser(server.DB, user.ID)
+	isDeleted, err := userInstance.DeleteUser(server.DB, user.ID)
 	if err != nil {
 		t.Errorf("this is the error deleting the user: %v\n", err)
 		return

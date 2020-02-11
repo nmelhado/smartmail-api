@@ -10,6 +10,7 @@ import (
 
 	"github.com/badoux/checkmail"
 	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -33,16 +34,22 @@ func (a authority) Value() (driver.Value, error) {
 }
 
 type User struct {
-	ID        uint64    `gorm:"primary_key;auto_increment" json:"id"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
 	CosmoID   string    `gorm:"size:8;not null;unique;unique_index:ix_cosmo_id" json:"cosmo_id"`
 	Email     string    `gorm:"size:100;not null;unique" json:"email"`
 	FirstName string    `gorm:"size:30;not null;" json:"first_name"`
 	LastName  string    `gorm:"size:30;not null;" json:"last_name"`
 	Phone     string    `gorm:"size:30;not null;unique" json:"phone"`
-	Authority authority `sql:"type:authority"; json:"authority";`
+	Authority authority `sql:"type:authority" json:"authority"`
 	Password  string    `gorm:"size:100;not null;" json:"password"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+}
+
+// BeforeCreate will set a UUID rather than numeric ID.
+func (u *User) BeforeCreate(scope *gorm.Scope) error {
+	uuid := uuid.NewV4()
+	return scope.SetColumn("ID", uuid)
 }
 
 func Hash(password string) ([]byte, error) {
@@ -63,7 +70,7 @@ func (u *User) BeforeSave() error {
 }
 
 func (u *User) Prepare() {
-	u.ID = 0
+	u.ID = uuid.UUID{}
 	u.CosmoID = html.EscapeString(strings.TrimSpace(u.CosmoID))
 	u.FirstName = html.EscapeString(strings.TrimSpace(u.FirstName))
 	u.LastName = html.EscapeString(strings.TrimSpace(u.LastName))
@@ -151,7 +158,7 @@ func (u *User) FindAllUsers(db *gorm.DB) (*[]User, error) {
 	return &users, err
 }
 
-func (u *User) FindUserByID(db *gorm.DB, uid uint32) (*User, error) {
+func (u *User) FindUserByID(db *gorm.DB, uid uuid.UUID) (*User, error) {
 	var err error
 	err = db.Debug().Model(User{}).Where("id = ?", uid).Take(&u).Error
 	if err != nil {
@@ -163,7 +170,7 @@ func (u *User) FindUserByID(db *gorm.DB, uid uint32) (*User, error) {
 	return u, err
 }
 
-func (u *User) UpdateAUser(db *gorm.DB, uid uint32) (*User, error) {
+func (u *User) UpdateAUser(db *gorm.DB, uid uuid.UUID) (*User, error) {
 
 	// To hash the password
 	err := u.BeforeSave()
@@ -191,7 +198,7 @@ func (u *User) UpdateAUser(db *gorm.DB, uid uint32) (*User, error) {
 	return u, nil
 }
 
-func (u *User) DeleteAUser(db *gorm.DB, uid uint32) (int64, error) {
+func (u *User) DeleteUser(db *gorm.DB, uid uuid.UUID) (int64, error) {
 
 	db = db.Debug().Model(&User{}).Where("id = ?", uid).Take(&User{}).Delete(&User{})
 

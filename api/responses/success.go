@@ -1,9 +1,9 @@
 package responses
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
+	"time"
+
+	"gopkg.in/guregu/null.v3"
 )
 
 // Struct returned when a new user is created
