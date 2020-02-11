@@ -61,6 +61,8 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	addressAssignment.Address = *createAddress
+	addressAssignment.AddressID = createAddress.ID
+	fmt.Printf("Address: %+v", addressAssignment.Address)
 
 	addressAssignment.Prepare()
 	err = addressAssignment.Validate()

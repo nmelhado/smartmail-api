@@ -87,9 +87,6 @@ func (aa *AddressAssignment) Prepare() {
 
 func (aa *AddressAssignment) Validate() error {
 
-	if aa.AddressID == 0 {
-		return errors.New("Address required")
-	}
 	if aa.UserID == 0 {
 		return errors.New("User required")
 	}

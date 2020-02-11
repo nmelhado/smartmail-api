@@ -20,6 +20,7 @@ const (
 	MailerAuth   authority = "mailer"
 	AdminAuth    authority = "admin"
 	EngineerAuth authority = "engineer"
+	RetailerAuth authority = "retailer"
 )
 
 func (a *authority) Scan(value interface{}) error {
