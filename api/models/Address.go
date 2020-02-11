@@ -22,7 +22,7 @@ type Address struct {
 	State        string      `gorm:"size:255;not null;" json:"state"`
 	ZipCode      string      `gorm:"size:255;not null;" json:"zip_code"`
 	Country      string      `gorm:"size:255;not null;" json:"country"`
-	Phone        string      `gorm:"size:255;" json:"phone"`
+	Phone        null.String `gorm:"size:255;" json:"phone"`
 	CreatedAt    time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt    time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }

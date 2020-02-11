@@ -83,6 +83,87 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusCreated, createAddress)
 }
 
+func (server *Server) CreateUserAndAddress(w http.ResponseWriter, r *http.Request) {
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	addressAssignment := models.AddressAssignment{}
+	err = json.Unmarshal(body, &addressAssignment)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	
+	addressAssignment.User.Prepare()
+	err = addressAssignment.User.Validate()
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	userCreated, err := user.SaveUser(server.DB)
+	if err != nil {
+		formattedError := formaterror.FormatError(err.Error())
+		responses.ERROR(w, http.StatusInternalServerError, formattedError)
+		return
+	}
+	
+	addressAssignment.Address.Prepare()
+	err = addressAssignment.Address.Validate()
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	uid, err := auth.ExtractTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+	if uid != addressAssignment.UserID {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	user := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", uid).Take(&user).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+	addressAssignment.User = user
+
+	createAddress, err := addressAssignment.Address.SaveAddress(server.DB)
+	if err != nil {
+		formattedError := formaterror.FormatError(err.Error())
+		responses.ERROR(w, http.StatusInternalServerError, formattedError)
+		return
+	}
+	addressAssignment.Address = *createAddress
+	addressAssignment.AddressID = createAddress.ID
+	fmt.Printf("Address: %+v", addressAssignment.Address)
+
+	addressAssignment.Prepare()
+	err = addressAssignment.Validate()
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	_, err = addressAssignment.SaveAddressAssignment(server.DB)
+	if err != nil {
+		_, _ = addressAssignment.Address.DeleteAddress(server.DB, createAddress.ID)
+		formattedError := formaterror.FormatError(err.Error())
+		responses.ERROR(w, http.StatusInternalServerError, formattedError)
+		return
+	}
+
+	w.Header().Set("Location", fmt.Sprintf("%s%s/%d", r.Host, r.URL.Path, createAddress.ID))
+	responses.JSON(w, http.StatusCreated, createAddress)
+}
+
 func (server *Server) GetAddressByID(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
