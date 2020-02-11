@@ -16,10 +16,10 @@ import (
 type authority string
 
 const (
-	UserAuth     authority = "user_auth"
-	MailerAuth   authority = "mailer_auth"
-	AdminAuth    authority = "admin_auth"
-	EngineerAuth authority = "engineer_auth"
+	UserAuth     authority = "user"
+	MailerAuth   authority = "mailer"
+	AdminAuth    authority = "admin"
+	EngineerAuth authority = "engineer"
 )
 
 func (a *authority) Scan(value interface{}) error {

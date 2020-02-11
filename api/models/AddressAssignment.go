@@ -13,11 +13,11 @@ type status string
 
 const (
 	longTerm             status = "long_term"
-	temporary            status = "temporary_term"
+	temporary            status = "temporary"
 	packageOnlyLongTerm  status = "package_only_long_term"
-	packageOnlyTemporary status = "package_only_temporary_term"
+	packageOnlyTemporary status = "package_only_temporary"
 	mailOnlyLongTerm     status = "mail_only_long_term"
-	mailOnlyTemporary    status = "mail_only_temporary_term"
+	mailOnlyTemporary    status = "mail_only_temporary"
 	expired              status = "expired"
 	deleted              status = "deleted"
 )
