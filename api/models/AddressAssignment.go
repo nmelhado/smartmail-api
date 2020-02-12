@@ -106,6 +106,16 @@ func (aa *AddressAssignment) Validate() error {
 
 func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignment, error) {
 	var err error
+	if contains(temporaryStatus, aa.Status) {
+		var conflictingAddresses := []AddressAssignment{}
+		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN ('temporary', ?) AND ((start_date <= ? AND start_date >= ?) OR (end_date >= ? AND end_date <= ?))", uid, aa.Status, aa.EndDate, aa.StartDate, aa.EndDate, aa.StartDate, aa.EndDate).Limit(100).Find(&conflictingAddresses).Error
+	if err != nil {
+		return &AddressAssignment{}, err
+	}
+	if len(conflictingAddresses) > 0 {
+		return &AddressAssignment{}, errors.New("Conflict with another temporary address. Please make sure that the dates for temporary addresses don't overlap.")
+	}
+	}
 	err = db.Debug().Model(&AddressAssignment{}).Create(&aa).Error
 	if err != nil {
 		return &AddressAssignment{}, err
@@ -119,7 +129,9 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 		if err != nil {
 			return &AddressAssignment{}, err
 		}
-		err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ?", longTermStatus, aa.ID, aa.UserID).Updates(AddressAssignment{Status: expired, EndDate: aa.StartDate, UpdatedAt: time.Now()}).Error
+		if contains(longTermStatus, aa.Status) {
+			err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ?", longTermStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: aa.StartDate, UpdatedAt: time.Now()}).Error
+		}
 	}
 	return aa, nil
 }
