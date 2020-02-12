@@ -17,7 +17,6 @@ import (
 )
 
 func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
-
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
@@ -71,7 +70,8 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = addressAssignment.SaveAddressAssignment(server.DB)
+	finalAddress := &models.AddressAssignment{}
+	finalAddress, err = addressAssignment.SaveAddressAssignment(server.DB)
 	if err != nil {
 		_, _ = addressAssignment.Address.DeleteAddress(server.DB, createAddress.ID)
 		formattedError := formaterror.FormatError(err.Error())
@@ -79,8 +79,11 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	addressResponse := &responses.AddressResponse{}
+	responses.TranslateAddressResponse(finalAddress, addressResponse)
+
 	w.Header().Set("Location", fmt.Sprintf("%s%s/%d", r.Host, r.URL.Path, createAddress.ID))
-	responses.JSON(w, http.StatusCreated, createAddress)
+	responses.JSON(w, http.StatusCreated, addressResponse)
 }
 
 func (server *Server) CreateUserAndAddress(w http.ResponseWriter, r *http.Request) {
@@ -172,11 +175,7 @@ func (server *Server) GetAddressByID(w http.ResponseWriter, r *http.Request) {
 func (server *Server) GetMailingAddressByCosmoID(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
-	cosmoID, err := strconv.ParseUint(vars["cosmo_id"], 10, 64)
-	if err != nil {
-		responses.ERROR(w, http.StatusBadRequest, err)
-		return
-	}
+	cosmoID := vars["cosmo_id"]
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -196,6 +195,7 @@ func (server *Server) GetMailingAddressByCosmoID(w http.ResponseWriter, r *http.
 	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUid).Take(&reqUser).Error
 
 	if user.ID != reqUser.ID && reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
+		fmt.Print(reqUser.Authority)
 		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
 		return
 	}
@@ -206,17 +206,17 @@ func (server *Server) GetMailingAddressByCosmoID(w http.ResponseWriter, r *http.
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
 	}
-	responses.JSON(w, http.StatusOK, addressReceived)
+
+	addressResponse := &responses.AddressCosmoIDResponse{}
+	responses.TranslateCosmoAddressResponse(addressReceived, addressResponse)
+
+	responses.JSON(w, http.StatusOK, addressResponse)
 }
 
 func (server *Server) GetPackageAddressByCosmoID(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
-	cosmoID, err := strconv.ParseUint(vars["cosmo_id"], 10, 64)
-	if err != nil {
-		responses.ERROR(w, http.StatusBadRequest, err)
-		return
-	}
+	cosmoID := vars["cosmo_id"]
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -246,7 +246,11 @@ func (server *Server) GetPackageAddressByCosmoID(w http.ResponseWriter, r *http.
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
 	}
-	responses.JSON(w, http.StatusOK, addressReceived)
+
+	addressResponse := &responses.AddressCosmoIDResponse{}
+	responses.TranslateCosmoAddressResponse(addressReceived, addressResponse)
+
+	responses.JSON(w, http.StatusOK, addressResponse)
 }
 
 func (server *Server) UpdateAddress(w http.ResponseWriter, r *http.Request) {

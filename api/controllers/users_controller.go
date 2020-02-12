@@ -16,13 +16,18 @@ import (
 )
 
 func (server *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
-
+	userResponse := responses.CreateUserResponse{}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 	}
 	user := models.User{}
 	err = json.Unmarshal(body, &user)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	err = json.Unmarshal(body, &userResponse)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
@@ -43,7 +48,7 @@ func (server *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Location", fmt.Sprintf("%s%s/%d", r.Host, r.RequestURI, userCreated.ID))
-	responses.JSON(w, http.StatusCreated, userCreated)
+	responses.JSON(w, http.StatusCreated, userResponse)
 }
 
 func (server *Server) GetUsers(w http.ResponseWriter, r *http.Request) {

@@ -10,63 +10,69 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
-type status string
+type Status string
 
 const (
-	longTerm             status = "long_term"
-	temporary            status = "temporary"
-	packageOnlyLongTerm  status = "package_only_long_term"
-	packageOnlyTemporary status = "package_only_temporary"
-	mailOnlyLongTerm     status = "mail_only_long_term"
-	mailOnlyTemporary    status = "mail_only_temporary"
-	expired              status = "expired"
-	deleted              status = "deleted"
+	longTerm             Status = "long_term"
+	temporary            Status = "temporary"
+	packageOnlyLongTerm  Status = "package_only_long_term"
+	packageOnlyTemporary Status = "package_only_temporary"
+	mailOnlyLongTerm     Status = "mail_only_long_term"
+	mailOnlyTemporary    Status = "mail_only_temporary"
+	expired              Status = "expired"
+	deleted              Status = "deleted"
 )
 
-func (s *status) Scan(value interface{}) error {
-	*s = status(value.([]byte))
+func (s *Status) Scan(value interface{}) error {
+	*s = Status(value.([]byte))
 	return nil
 }
 
-func (s status) Value() (driver.Value, error) {
+func (s Status) Value() (driver.Value, error) {
 	return string(s), nil
 }
 
-// refer to link for `status` field: https://github.com/jinzhu/gorm/issues/1978
+// refer to link for `Status` field: https://github.com/jinzhu/gorm/issues/1978
 type AddressAssignment struct {
 	ID        uint64    `gorm:"primary_key;auto_increment" json:"id"`
 	User      User      `json:"user"`
 	UserID    uuid.UUID `gorm:"type:uuid" sql:"type:uuid REFERENCES users(id)" json:"user_id"`
 	Address   Address   `json:"address"`
 	AddressID uint64    `sql:"type:int REFERENCES addresses(id)" json:"address_id"`
-	Status    status    `sql:"type:status" json:"status"`
+	Status    Status    `sql:"type:status" json:"status"`
 	StartDate null.Time `gorm:"default:CURRENT_TIMESTAMP;not null;" json:"start_date"`
 	EndDate   null.Time `gorm:"default:null" json:"end_date"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
-var validPackageStatus []status = []status{
+var validPackageStatus []Status = []Status{
 	longTerm,
 	temporary,
 	packageOnlyLongTerm,
 	packageOnlyTemporary,
 }
 
-var validMailStatus []status = []status{
+var validMailStatus []Status = []Status{
 	longTerm,
 	temporary,
 	mailOnlyLongTerm,
 	mailOnlyTemporary,
 }
 
-var temporaryStatus []status = []status{
+var temporaryStatus []Status = []Status{
 	temporary,
 	packageOnlyTemporary,
 	mailOnlyTemporary,
 }
 
-func contains(arr []status, status status) bool {
+var longTermStatus []Status = []Status{
+	longTerm,
+	mailOnlyLongTerm,
+	packageOnlyLongTerm,
+}
+
+func contains(arr []Status, status Status) bool {
 	for _, a := range arr {
 		if a == status {
 			return true
@@ -113,6 +119,7 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 		if err != nil {
 			return &AddressAssignment{}, err
 		}
+		err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ?", longTermStatus, aa.ID, aa.UserID).Updates(AddressAssignment{Status: expired, EndDate: aa.StartDate, UpdatedAt: time.Now()}).Error
 	}
 	return aa, nil
 }
@@ -131,7 +138,7 @@ func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, user User,
 	var err error
 	address := AddressAssignment{}
 
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND staus IN ? AND ? BETWEEN star_date AND end_date", user.ID, validMailStatus, targetDate).Find(&address).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validMailStatus, targetDate, targetDate).Find(&address).Error
 	if err != nil {
 		return &AddressAssignment{}, err
 	}
@@ -149,7 +156,7 @@ func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, user User,
 	var err error
 	address := AddressAssignment{}
 
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND staus IN ? AND ? BETWEEN star_date AND end_date", user.ID, validPackageStatus, targetDate).Find(&address).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validPackageStatus, targetDate, targetDate).Find(&address).Error
 	if err != nil {
 		return &AddressAssignment{}, err
 	}

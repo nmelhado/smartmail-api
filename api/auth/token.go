@@ -67,9 +67,10 @@ func ExtractTokenID(r *http.Request) (uuid.UUID, error) {
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
-		temp := fmt.Sprintf("%.0f", claims["user_id"])
-		fmt.Print(temp)
-		uid := uuid.FromStringOrNil(fmt.Sprintf("%.0f", claims["user_id"]))
+		uid, err := uuid.FromString(fmt.Sprintf("%s", claims["user_id"]))
+		if err != nil {
+			return uuid.UUID{}, err
+		}
 		return uid, nil
 	}
 	return uuid.UUID{}, nil

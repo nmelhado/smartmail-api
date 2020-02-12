@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/nmelhado/pinpoint-api/api/auth"
 	"github.com/nmelhado/pinpoint-api/api/models"
@@ -37,7 +38,10 @@ func (server *Server) Login(w http.ResponseWriter, r *http.Request) {
 		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
 		return
 	}
-	responses.JSON(w, http.StatusOK, token)
+	response := responses.TokenResponse{}
+	response.Token = token
+	response.Expires = time.Now().Add(time.Hour * 1)
+	responses.JSON(w, http.StatusOK, response)
 }
 
 func (server *Server) SignIn(email, password string) (string, error) {

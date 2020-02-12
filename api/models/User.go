@@ -71,10 +71,10 @@ func (u *User) BeforeSave() error {
 
 func (u *User) Prepare() {
 	u.ID = uuid.UUID{}
-	u.CosmoID = html.EscapeString(strings.TrimSpace(u.CosmoID))
+	u.CosmoID = html.EscapeString(strings.ToUpper(strings.TrimSpace(u.CosmoID)))
 	u.FirstName = html.EscapeString(strings.TrimSpace(u.FirstName))
 	u.LastName = html.EscapeString(strings.TrimSpace(u.LastName))
-	u.Email = html.EscapeString(strings.TrimSpace(u.Email))
+	u.Email = html.EscapeString(strings.ToLower(strings.TrimSpace(u.Email)))
 	u.Phone = html.EscapeString(strings.TrimSpace(u.Phone))
 	u.Authority = UserAuth
 	u.CreatedAt = time.Now()
