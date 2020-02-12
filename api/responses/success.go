@@ -81,7 +81,7 @@ type AddressCosmoIDResponse struct {
 
 func TranslateAddressResponse(originalAddress *models.AddressAssignment, reply *AddressResponse) {
 	reply.Status = originalAddress.Status
-	reply.StartDate = originalAddress.StartDate.Time
+	reply.StartDate = originalAddress.StartDate
 	if originalAddress.EndDate.Valid {
 		reply.EndDate = originalAddress.EndDate.Time.String()
 	}

@@ -40,7 +40,7 @@ type AddressAssignment struct {
 	Address   Address   `json:"address"`
 	AddressID uint64    `sql:"type:int REFERENCES addresses(id)" json:"address_id"`
 	Status    Status    `sql:"type:status" json:"status"`
-	StartDate null.Time `gorm:"default:CURRENT_TIMESTAMP;not null;" json:"start_date"`
+	StartDate time.Time `gorm:"default:CURRENT_TIMESTAMP;not null;" json:"start_date"`
 	EndDate   null.Time `gorm:"default:null" json:"end_date"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
@@ -93,7 +93,7 @@ func (aa *AddressAssignment) Validate() error {
 	if status, err := aa.Status.Value(); status == "" || err != nil {
 		return errors.New("Status required")
 	}
-	if !aa.StartDate.Valid {
+	if !aa.StartDate.IsZero() {
 		return errors.New("Start date required")
 	}
 	if contains(temporaryStatus, aa.Status) {
