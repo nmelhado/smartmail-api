@@ -10,6 +10,7 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
+// Address is the sql and and json model for an address
 type Address struct {
 	ID           uint64      `gorm:"primary_key;auto_increment" json:"id"`
 	Nickname     null.String `gorm:"size:255;" json:"nickname"`
@@ -27,6 +28,7 @@ type Address struct {
 	UpdatedAt    time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
+// Prepare escapes html, trims strings, and sets created and updated times for the various Address fields
 func (a *Address) Prepare() {
 	a.ID = 0
 	a.Nickname.String = html.EscapeString(strings.TrimSpace(a.Nickname.String))
@@ -44,6 +46,7 @@ func (a *Address) Prepare() {
 	a.UpdatedAt = time.Now()
 }
 
+// Validate ensures that proper input were received
 func (a *Address) Validate() error {
 
 	if a.LineOne == "" {
@@ -64,6 +67,7 @@ func (a *Address) Validate() error {
 	return nil
 }
 
+// SaveAddress saves an address. This is typically followed immediately by a SaveAddressAssignment call.
 func (a *Address) SaveAddress(db *gorm.DB) (*Address, error) {
 	var err error
 	err = db.Debug().Model(&Address{}).Create(&a).Error
@@ -95,6 +99,7 @@ func (a *Address) SaveAddress(db *gorm.DB) (*Address, error) {
 // 	return &posts, nil
 // }
 
+// FindAddressByID find an address using its ID value
 func (a *Address) FindAddressByID(db *gorm.DB, aid uint64) (*Address, error) {
 	var err error
 	err = db.Debug().Model(&Address{}).Where("id = ?", aid).Take(&a).Error
@@ -104,6 +109,7 @@ func (a *Address) FindAddressByID(db *gorm.DB, aid uint64) (*Address, error) {
 	return a, nil
 }
 
+// UpdateAddress updates the values of an address (this is for correcting an address, NOT updating a user's current address)
 func (a *Address) UpdateAddress(db *gorm.DB) (*Address, error) {
 
 	var err error
@@ -146,6 +152,7 @@ func (a *Address) UpdateAddress(db *gorm.DB) (*Address, error) {
 	return a, nil
 }
 
+// DeleteAddress removes an address from the DB (should never use this unless correcting an accidental addition)
 func (a *Address) DeleteAddress(db *gorm.DB, aid uint64) (int64, error) {
 
 	db = db.Debug().Model(&Address{}).Where("id = ?", aid).Take(&Address{}).Delete(&Address{})

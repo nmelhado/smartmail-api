@@ -29,10 +29,12 @@ func (a *authority) Scan(value interface{}) error {
 	return nil
 }
 
+// Value returns the value of the authority enum
 func (a authority) Value() (driver.Value, error) {
 	return string(a), nil
 }
 
+// User is the DB and json structure for a user
 type User struct {
 	ID        uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
 	CosmoID   string    `gorm:"size:8;not null;unique;unique_index:ix_cosmo_id" json:"cosmo_id"`
@@ -52,14 +54,17 @@ func (u *User) BeforeCreate(scope *gorm.Scope) error {
 	return scope.SetColumn("ID", uuid)
 }
 
+// Hash creates a hass of the user's provided oassword
 func Hash(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }
 
+// VerifyPassword compares the provided password to the hashed password stored in the DB
 func VerifyPassword(hashedPassword, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
+// BeforeSave converts a string password into a hashed oassword before uploading to the DB
 func (u *User) BeforeSave() error {
 	hashedPassword, err := Hash(u.Password)
 	if err != nil {
@@ -69,6 +74,7 @@ func (u *User) BeforeSave() error {
 	return nil
 }
 
+// Prepare sanitizes a user object before other operations are performed
 func (u *User) Prepare() {
 	u.ID = uuid.UUID{}
 	u.CosmoID = html.EscapeString(strings.ToUpper(strings.TrimSpace(u.CosmoID)))
@@ -81,6 +87,7 @@ func (u *User) Prepare() {
 	u.UpdatedAt = time.Now()
 }
 
+// Validate ensures proper inputs
 func (u *User) Validate(action string) error {
 	switch strings.ToLower(action) {
 	case "update":
@@ -138,6 +145,7 @@ func (u *User) Validate(action string) error {
 	}
 }
 
+// Saves a user to the DB. Almost always done in conjunction with saving a user's first address and address assignment
 func (u *User) SaveUser(db *gorm.DB) (*User, error) {
 
 	var err error
@@ -148,6 +156,7 @@ func (u *User) SaveUser(db *gorm.DB) (*User, error) {
 	return u, nil
 }
 
+// FindAllUsers retrieves 100 users from the DB
 func (u *User) FindAllUsers(db *gorm.DB) (*[]User, error) {
 	var err error
 	users := []User{}

@@ -10,6 +10,8 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
+// Status is an enum type used for AddressAssignment (valies cannot be added wothot altering the DB first!) 
+// refer to link for `Status` field: https://github.com/jinzhu/gorm/issues/1978
 type Status string
 
 const (
@@ -23,16 +25,18 @@ const (
 	deleted              Status = "deleted"
 )
 
+// Scan - not quite sure what this does
 func (s *Status) Scan(value interface{}) error {
 	*s = Status(value.([]byte))
 	return nil
 }
 
+// Value returns the value for the Status enum type
 func (s Status) Value() (driver.Value, error) {
 	return string(s), nil
 }
 
-// refer to link for `Status` field: https://github.com/jinzhu/gorm/issues/1978
+// AddressAssignment is the DB table structure and json input structure for an address assignment. It is a one to many relationship table. One user can have many addresses
 type AddressAssignment struct {
 	ID        uint64    `gorm:"primary_key;auto_increment" json:"id"`
 	User      User      `json:"user"`
@@ -81,6 +85,7 @@ func contains(arr []Status, status Status) bool {
 	return false
 }
 
+// Prepare formats the AddressAssignment object
 func (aa *AddressAssignment) Prepare() {
 	aa.ID = 0
 	aa.User = User{}
@@ -89,6 +94,7 @@ func (aa *AddressAssignment) Prepare() {
 	aa.UpdatedAt = time.Now()
 }
 
+// Validate checks the input fields for an AddressAssignment to make sure everything is correct
 func (aa *AddressAssignment) Validate() error {
 	if status, err := aa.Status.Value(); status == "" || err != nil {
 		return errors.New("Status required")
@@ -104,6 +110,7 @@ func (aa *AddressAssignment) Validate() error {
 	return nil
 }
 
+// SaveAddressAssignment is used to save an address assignment. It is called once a user already exists and the address has been created
 func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignment, error) {
 	var err error
 	if contains(temporaryStatus, aa.Status) {
@@ -136,6 +143,7 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 	return aa, nil
 }
 
+// UpdateAddressAssignment is used to update status as well as start and end dates.
 func (aa *AddressAssignment) UpdateAddressAssignment(db *gorm.DB) (*AddressAssignment, error) {
 
 	var err error
@@ -146,6 +154,7 @@ func (aa *AddressAssignment) UpdateAddressAssignment(db *gorm.DB) (*AddressAssig
 	return aa, nil
 }
 
+// FindMailingAddressWithCosmo allows a mailcarrier to retrieve the correct address to send mail to a user by inputing a User (retieved through CosmoID) and an estimated date of delivery
 func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
 	var err error
 	address := AddressAssignment{}
@@ -164,6 +173,7 @@ func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, user User,
 	return &address, nil
 }
 
+// FindPackageAddressWithCosmo allows a mailcarrier to retrieve the correct address to send packages to a user by inputing a User (retieved through CosmoID) and an estimated date of delivery
 func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
 	var err error
 	address := AddressAssignment{}
@@ -182,6 +192,7 @@ func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, user User,
 	return &address, nil
 }
 
+// FindAllAddressesForUser retieves the last 100 addresses a user has linked to their account. Used in UI to provide address history
 func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uint64) (*[]AddressAssignment, error) {
 	var err error
 	addresses := []AddressAssignment{}
