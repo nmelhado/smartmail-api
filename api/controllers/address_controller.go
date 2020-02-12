@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -141,7 +142,8 @@ func (server *Server) CreateUserAndAddress(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	_, err = addressAssignment.SaveAddressAssignment(server.DB)
+	finalAddress := &models.AddressAssignment{}
+	finalAddress, err = addressAssignment.SaveAddressAssignment(server.DB)
 	if err != nil {
 		_, _ = addressAssignment.User.DeleteUser(server.DB, user.ID)
 		_, _ = addressAssignment.Address.DeleteAddress(server.DB, createAddress.ID)
@@ -150,8 +152,11 @@ func (server *Server) CreateUserAndAddress(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	addressResponse := &responses.CreateUserAndAddressResponse{}
+	responses.TranslateUserAndAddressResponse(finalAddress, addressResponse)
+
 	w.Header().Set("Location", fmt.Sprintf("%s%s/%d", r.Host, r.URL.Path, createAddress.ID))
-	responses.JSON(w, http.StatusCreated, createAddress)
+	responses.JSON(w, http.StatusCreated, addressResponse)
 }
 
 func (server *Server) GetAddressByID(w http.ResponseWriter, r *http.Request) {
@@ -183,7 +188,7 @@ func (server *Server) GetMailingAddressByCosmoID(w http.ResponseWriter, r *http.
 	}
 	user := models.User{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("cosmo_id = ?", cosmoID).Take(&user).Error
+	err = server.DB.Debug().Model(models.User{}).Where("cosmo_id = ?", strings.ToUpper(cosmoID)).Take(&user).Error
 
 	reqUid, err := auth.ExtractTokenID(r)
 	if err != nil {
@@ -224,7 +229,7 @@ func (server *Server) GetPackageAddressByCosmoID(w http.ResponseWriter, r *http.
 	}
 	user := models.User{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("cosmo_id = ?", cosmoID).Take(&user).Error
+	err = server.DB.Debug().Model(models.User{}).Where("cosmo_id = ?", strings.ToUpper(cosmoID)).Take(&user).Error
 
 	reqUid, err := auth.ExtractTokenID(r)
 	if err != nil {

@@ -97,7 +97,7 @@ func (aa *AddressAssignment) Validate() error {
 		return errors.New("Start date required")
 	}
 	if contains(temporaryStatus, aa.Status) {
-		if aa.EndDate.Valid {
+		if !aa.EndDate.Valid {
 			return errors.New("End date required for temporary address")
 		}
 	}
@@ -107,14 +107,14 @@ func (aa *AddressAssignment) Validate() error {
 func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignment, error) {
 	var err error
 	if contains(temporaryStatus, aa.Status) {
-		var conflictingAddresses := []AddressAssignment{}
-		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN ('temporary', ?) AND ((start_date <= ? AND start_date >= ?) OR (end_date >= ? AND end_date <= ?))", uid, aa.Status, aa.EndDate, aa.StartDate, aa.EndDate, aa.StartDate, aa.EndDate).Limit(100).Find(&conflictingAddresses).Error
-	if err != nil {
-		return &AddressAssignment{}, err
-	}
-	if len(conflictingAddresses) > 0 {
-		return &AddressAssignment{}, errors.New("Conflict with another temporary address. Please make sure that the dates for temporary addresses don't overlap.")
-	}
+		conflictingAddresses := []AddressAssignment{}
+		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN ('temporary', ?) AND ((start_date <= ? AND start_date >= ?) OR (end_date >= ? AND end_date <= ?))", aa.UserID, aa.Status, aa.EndDate, aa.StartDate, aa.StartDate, aa.EndDate).Limit(100).Find(&conflictingAddresses).Error
+		if err != nil {
+			return &AddressAssignment{}, err
+		}
+		if len(conflictingAddresses) > 0 {
+			return &AddressAssignment{}, errors.New("Conflict with another temporary address. Please make sure that the dates for temporary addresses don't overlap.")
+		}
 	}
 	err = db.Debug().Model(&AddressAssignment{}).Create(&aa).Error
 	if err != nil {

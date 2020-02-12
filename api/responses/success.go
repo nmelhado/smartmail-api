@@ -25,22 +25,22 @@ type CreateUserResponse struct {
 
 // Struct returned when a new user and address are simultaneously created
 type CreateUserAndAddressResponse struct {
-	CosmoID      string      `json:"cosmo_id"`
-	Email        string      `json:"email"`
-	FirstName    string      `json:"first_name"`
-	LastName     string      `json:"last_name"`
-	Phone        string      `json:"phone"`
-	BusinessName null.String `json:"business_name"`
-	AttentionTo  null.String `json:"attention_to"`
-	LineOne      string      `json:"line_one"`
-	LineTwo      null.String `json:"line_two"`
-	UnitNumber   null.String `json:"unit_number"`
-	City         string      `json:"city"`
-	State        string      `json:"state"`
-	ZipCode      string      `json:"zip_code"`
-	Country      string      `json:"country"`
-	CreatedAt    time.Time   `json:"created_at"`
-	AddressPhone null.String `json:"phone_for_address"`
+	CosmoID      string    `json:"cosmo_id"`
+	Email        string    `json:"email"`
+	FirstName    string    `json:"first_name"`
+	LastName     string    `json:"last_name"`
+	Phone        string    `json:"phone"`
+	BusinessName string    `json:"business_name,omitempty"`
+	AttentionTo  string    `json:"attention_to,omitempty"`
+	LineOne      string    `json:"line_one"`
+	LineTwo      string    `json:"line_two,omitempty"`
+	UnitNumber   string    `json:"unit_number,omitempty"`
+	City         string    `json:"city"`
+	State        string    `json:"state"`
+	ZipCode      string    `json:"zip_code"`
+	Country      string    `json:"country"`
+	AddressPhone string    `json:"phone_for_address,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 // Used for creating, updating, and retrieving a single address
@@ -119,4 +119,23 @@ func TranslateCosmoAddressResponse(originalAddress *models.AddressAssignment, re
 	if !reply.Phone.Valid {
 		reply.Phone.SetValid(originalAddress.User.Phone)
 	}
+}
+
+func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, reply *CreateUserAndAddressResponse) {
+	reply.CosmoID = originalAddress.User.CosmoID
+	reply.Email = originalAddress.User.Email
+	reply.Phone = originalAddress.User.Phone
+	reply.FirstName = originalAddress.User.FirstName
+	reply.LastName = originalAddress.User.LastName
+	reply.BusinessName = originalAddress.Address.BusinessName.String
+	reply.AttentionTo = originalAddress.Address.AttentionTo.String
+	reply.LineOne = originalAddress.Address.LineOne
+	reply.LineTwo = originalAddress.Address.LineTwo.String
+	reply.UnitNumber = originalAddress.Address.UnitNumber.String
+	reply.City = originalAddress.Address.City
+	reply.State = originalAddress.Address.State
+	reply.ZipCode = originalAddress.Address.ZipCode
+	reply.Country = originalAddress.Address.Country
+	reply.AddressPhone = originalAddress.Address.Phone.String
+	reply.CreatedAt = originalAddress.User.CreatedAt
 }
