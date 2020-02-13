@@ -99,7 +99,7 @@ func (aa *AddressAssignment) Validate() error {
 	if status, err := aa.Status.Value(); status == "" || err != nil {
 		return errors.New("Status required")
 	}
-	if !aa.StartDate.IsZero() {
+	if aa.StartDate.IsZero() {
 		return errors.New("Start date required")
 	}
 	if contains(temporaryStatus, aa.Status) {
@@ -161,16 +161,10 @@ func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, user User,
 
 	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, mailOnlyTemporary, temporary, targetDate, targetDate).Find(&address).Error
 	if err != nil {
-		return &AddressAssignment{}, err
-	}
-
-	if address.ID == 0 {
-
 		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validMailStatus, targetDate, targetDate).Find(&address).Error
 		if err != nil {
 			return &AddressAssignment{}, err
 		}
-
 	}
 
 	if address.ID > 0 {
@@ -190,16 +184,10 @@ func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, user User,
 
 	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, packageOnlyTemporary, temporary, targetDate, targetDate).Find(&address).Error
 	if err != nil {
-		return &AddressAssignment{}, err
-	}
-
-	if address.ID == 0 {
-
 		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validPackageStatus, targetDate, targetDate).Find(&address).Error
 		if err != nil {
 			return &AddressAssignment{}, err
 		}
-
 	}
 
 	if address.ID > 0 {
