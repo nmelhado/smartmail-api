@@ -10,7 +10,7 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
-// Status is an enum type used for AddressAssignment (valies cannot be added wothot altering the DB first!) 
+// Status is an enum type used for AddressAssignment (valies cannot be added wothot altering the DB first!)
 // refer to link for `Status` field: https://github.com/jinzhu/gorm/issues/1978
 type Status string
 
@@ -120,7 +120,7 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 			return &AddressAssignment{}, err
 		}
 		if len(conflictingAddresses) > 0 {
-			return &AddressAssignment{}, errors.New("Conflict with another temporary address. Please make sure that the dates for temporary addresses don't overlap.")
+			return &AddressAssignment{}, errors.New("conflict with another temporary address - please make sure that the dates for temporary addresses don't overlap")
 		}
 	}
 	err = db.Debug().Model(&AddressAssignment{}).Create(&aa).Error
@@ -137,7 +137,7 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 			return &AddressAssignment{}, err
 		}
 		if contains(longTermStatus, aa.Status) {
-			err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ?", longTermStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: aa.StartDate, UpdatedAt: time.Now()}).Error
+			err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ?", longTermStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate), UpdatedAt: time.Now()}).Error
 		}
 	}
 	return aa, nil
@@ -163,16 +163,16 @@ func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, user User,
 	if err != nil {
 		return &AddressAssignment{}, err
 	}
-	
+
 	if address.ID == 0 {
-	
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validMailStatus, targetDate, targetDate).Find(&address).Error
-	if err != nil {
-		return &AddressAssignment{}, err
+
+		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validMailStatus, targetDate, targetDate).Find(&address).Error
+		if err != nil {
+			return &AddressAssignment{}, err
+		}
+
 	}
-	
-	}
-	
+
 	if address.ID > 0 {
 		err := db.Debug().Model(&Address{}).Where("id = ?", address.AddressID).Take(&address.Address).Error
 		if err != nil {
@@ -187,20 +187,20 @@ func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, user User,
 func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
 	var err error
 	address := AddressAssignment{}
-	
+
 	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, packageOnlyTemporary, temporary, targetDate, targetDate).Find(&address).Error
 	if err != nil {
 		return &AddressAssignment{}, err
 	}
-	
+
 	if address.ID == 0 {
 
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validPackageStatus, targetDate, targetDate).Find(&address).Error
-	if err != nil {
-		return &AddressAssignment{}, err
+		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validPackageStatus, targetDate, targetDate).Find(&address).Error
+		if err != nil {
+			return &AddressAssignment{}, err
+		}
+
 	}
-	
-}
 
 	if address.ID > 0 {
 		err := db.Debug().Model(&Address{}).Where("id = ?", address.AddressID).Take(&address.Address).Error
@@ -221,7 +221,7 @@ func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uint64) (*
 		return &[]AddressAssignment{}, err
 	}
 	if len(addresses) > 0 {
-		for i, _ := range addresses {
+		for i := range addresses {
 			err := db.Debug().Model(&User{}).Where("id = ?", addresses[i].UserID).Take(&addresses[i].User).Error
 			if err != nil {
 				return &[]AddressAssignment{}, err

@@ -17,10 +17,15 @@ import (
 type authority string
 
 const (
-	UserAuth     authority = "user"
-	MailerAuth   authority = "mailer"
-	AdminAuth    authority = "admin"
+	// UserAuth is the user authority type
+	UserAuth authority = "user"
+	// MailerAuth is the mailer authority type
+	MailerAuth authority = "mailer"
+	// AdminAuth is the admin authority type
+	AdminAuth authority = "admin"
+	// EngineerAuth is the engineer authority type
 	EngineerAuth authority = "engineer"
+	// RetailerAuth is the retailer authority type
 	RetailerAuth authority = "retailer"
 )
 
@@ -145,7 +150,7 @@ func (u *User) Validate(action string) error {
 	}
 }
 
-// Saves a user to the DB. Almost always done in conjunction with saving a user's first address and address assignment
+// SaveUser saves a user to the DB. Almost always done in conjunction with saving a user's first address and address assignment
 func (u *User) SaveUser(db *gorm.DB) (*User, error) {
 
 	var err error
@@ -167,6 +172,7 @@ func (u *User) FindAllUsers(db *gorm.DB) (*[]User, error) {
 	return &users, err
 }
 
+// FindUserByID retrieves the data for a user by uing their ID
 func (u *User) FindUserByID(db *gorm.DB, uid uuid.UUID) (*User, error) {
 	var err error
 	err = db.Debug().Model(User{}).Where("id = ?", uid).Take(&u).Error
@@ -179,6 +185,7 @@ func (u *User) FindUserByID(db *gorm.DB, uid uuid.UUID) (*User, error) {
 	return u, err
 }
 
+// UpdateAUser updates the values of a user
 func (u *User) UpdateAUser(db *gorm.DB, uid uuid.UUID) (*User, error) {
 
 	// To hash the password
@@ -207,6 +214,7 @@ func (u *User) UpdateAUser(db *gorm.DB, uid uuid.UUID) (*User, error) {
 	return u, nil
 }
 
+// DeleteUser removes a user from the DB
 func (u *User) DeleteUser(db *gorm.DB, uid uuid.UUID) (int64, error) {
 
 	db = db.Debug().Model(&User{}).Where("id = ?", uid).Take(&User{}).Delete(&User{})

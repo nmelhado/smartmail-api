@@ -15,6 +15,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+// CreateUser creates a user and adds the user to the DB (typically a user and address are created simultaneously from the address_controller)
 func (server *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	userResponse := responses.CreateUserResponse{}
 	body, err := ioutil.ReadAll(r.Body)
@@ -51,6 +52,7 @@ func (server *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusCreated, userResponse)
 }
 
+// GetUsers retrieves 100 users
 func (server *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	user := models.User{}
@@ -63,6 +65,7 @@ func (server *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, users)
 }
 
+// GetUser retrieves a single user through an ID passed as a URL param
 func (server *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -76,6 +79,7 @@ func (server *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, userGotten)
 }
 
+// UpdateUser updates a user's information
 func (server *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -115,6 +119,7 @@ func (server *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, updatedUser)
 }
 
+// DeleteUser deletes a user and removes them from the DB
 func (server *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)

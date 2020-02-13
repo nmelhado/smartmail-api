@@ -17,6 +17,7 @@ import (
 	"github.com/nmelhado/pinpoint-api/api/utils/formaterror"
 )
 
+// CreateAddress creates an address and uploads the address to the DB and links it to the user that created it
 func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -87,6 +88,7 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusCreated, addressResponse)
 }
 
+// CreateUserAndAddress creates a user and address simultaneously
 func (server *Server) CreateUserAndAddress(w http.ResponseWriter, r *http.Request) {
 
 	body, err := ioutil.ReadAll(r.Body)
@@ -159,6 +161,7 @@ func (server *Server) CreateUserAndAddress(w http.ResponseWriter, r *http.Reques
 	responses.JSON(w, http.StatusCreated, addressResponse)
 }
 
+// GetAddressByID retrieves an address using an address ID
 func (server *Server) GetAddressByID(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -177,6 +180,7 @@ func (server *Server) GetAddressByID(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, addressReceived)
 }
 
+// GetMailingAddressByCosmoID retrieves a user's mailing adress using a customer's CosmoID
 func (server *Server) GetMailingAddressByCosmoID(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -190,14 +194,14 @@ func (server *Server) GetMailingAddressByCosmoID(w http.ResponseWriter, r *http.
 
 	err = server.DB.Debug().Model(models.User{}).Where("cosmo_id = ?", strings.ToUpper(cosmoID)).Take(&user).Error
 
-	reqUid, err := auth.ExtractTokenID(r)
+	reqUID, err := auth.ExtractTokenID(r)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
 	reqUser := models.User{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUid).Take(&reqUser).Error
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
 
 	if user.ID != reqUser.ID && reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
 		fmt.Print(reqUser.Authority)
@@ -218,6 +222,7 @@ func (server *Server) GetMailingAddressByCosmoID(w http.ResponseWriter, r *http.
 	responses.JSON(w, http.StatusOK, addressResponse)
 }
 
+// GetPackageAddressByCosmoID retrieves a user's package adress using a customer's CosmoID
 func (server *Server) GetPackageAddressByCosmoID(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -231,14 +236,14 @@ func (server *Server) GetPackageAddressByCosmoID(w http.ResponseWriter, r *http.
 
 	err = server.DB.Debug().Model(models.User{}).Where("cosmo_id = ?", strings.ToUpper(cosmoID)).Take(&user).Error
 
-	reqUid, err := auth.ExtractTokenID(r)
+	reqUID, err := auth.ExtractTokenID(r)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
 	reqUser := models.User{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUid).Take(&reqUser).Error
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
 
 	if user.ID != reqUser.ID && reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
@@ -258,6 +263,7 @@ func (server *Server) GetPackageAddressByCosmoID(w http.ResponseWriter, r *http.
 	responses.JSON(w, http.StatusOK, addressResponse)
 }
 
+// UpdateAddress updates the values of an address (this is used to fix errors with an address NOT change addresses)
 func (server *Server) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -323,6 +329,7 @@ func (server *Server) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, addressUpdated)
 }
 
+// DeleteAddress removes an address from the DB (not typically used)
 func (server *Server) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)

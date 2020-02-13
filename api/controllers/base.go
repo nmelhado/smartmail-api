@@ -14,11 +14,13 @@ import (
 	"github.com/nmelhado/pinpoint-api/api/models"
 )
 
+// Server creates a domain that is used for all API endpoints
 type Server struct {
 	DB     *gorm.DB
 	Router *mux.Router
 }
 
+// Initialize starts the DB connection
 func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, DbName string) {
 
 	var err error
@@ -39,6 +41,7 @@ func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, D
 	server.initializeRoutes()
 }
 
+// Run alerts that the server is up and running
 func (server *Server) Run(addr string) {
 	fmt.Println("Listening to port 8080")
 	log.Fatal(http.ListenAndServe(addr, server.Router))

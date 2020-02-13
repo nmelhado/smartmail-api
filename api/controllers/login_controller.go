@@ -13,6 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Login validates a user and then calls SignIn
 func (server *Server) Login(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -44,6 +45,7 @@ func (server *Server) Login(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, response)
 }
 
+// SignIn retrieves a token that is used for API endpoints
 func (server *Server) SignIn(email, password string) (string, error) {
 
 	var err error
