@@ -72,15 +72,6 @@ func seedUsersAndAddresses() ([]models.User, []models.Address, []models.AddressA
 	
 	var users = []models.User{
 		models.User{
-			CosmoID: "12345678",
-			FirstName: "Test",
-			LastName: "McGee",
-			Phone: "6467085265",
-			Authority: models.UserAuth,
-			Email:    "steven@gmail.com",
-			Password: "password",
-		},
-		models.User{
 			CosmoID: "ABCDEFGH",
 			FirstName: "Alfred",
 			LastName: "Pennyworth",
@@ -110,14 +101,6 @@ func seedUsersAndAddresses() ([]models.User, []models.Address, []models.AddressA
 	}
 
 	var addresses = []models.Address{
-		models.Address{
-			Nickname:   "Home",
-			LineOne: "123 Fake Street",
-			City: "New York",
-			State: "NY",
-			ZipCode: "10021",
-			Country: "United States",
-		},
 		models.Address{
 			Nickname:   "Work",
 			LineOne: "347 Wayne Avenue",
@@ -154,29 +137,49 @@ func seedUsersAndAddresses() ([]models.User, []models.Address, []models.AddressA
 			Country: "United States",
 		},
 	}
-	
-	
-	
-
 	var addressesAssignments = []models.AddressAssignment{
 		models.AddressAssignment{
 			Status: models.LongTerm,
-			StartDate: time.Time(),
+			time.Parse("2006-01-02", "2020-01-01"),
+		},
+		models.AddressAssignment{
+			Status: models.Temporary,
+			time.Parse("2006-01-02", "2020-04-01"),
+			time.Parse("2006-01-02", "2020-07-01"),
+		},
+		models.AddressAssignment{
+			Status: models.LongTerm,
+			time.Parse("2006-01-02", "2020-01-01"),
+		},
+		models.AddressAssignment{
+			Status: models.LongTerm,
+			StartDate: time.Parse("2006-01-02", "2020-01-01"),
 		},
 	}
-	
-
-	for i, _ := range users {
+	for i, _ := range addresses {
+		if i < len(addresses) - 1 {
 		err = server.DB.Model(&models.User{}).Create(&users[i]).Error
 		if err != nil {
 			log.Fatalf("cannot seed users table: %v", err)
 		}
-		posts[i].AuthorID = users[i].ID
+		}
+		err = server.DB.Model(&models.Address{}).Create(&addresses[i]).Error
+		if err != nil {
+			log.Fatalf("cannot seed address table: %v", err)
+		}
+		
+		addressesAssignments[i].AddressID = address[i].ID
+		if i < 2 {
+		addressesAssignments[i].UserID = users[i].ID
+		}
+		if i >= 2 {
+		addressesAssignments[i + 1].UserID = users[i].ID
+		}
 
-		err = server.DB.Model(&models.Post{}).Create(&posts[i]).Error
+		err = server.DB.Model(&models.AddressAssignment{}).Create(&addressesAssignments[i]).Error
 		if err != nil {
 			log.Fatalf("cannot seed posts table: %v", err)
 		}
 	}
-	return users, posts, nil
+	return users, addresses, addressesAssignments, nil
 }

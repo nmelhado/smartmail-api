@@ -15,14 +15,14 @@ import (
 type Status string
 
 const (
-	longTerm             Status = "long_term"
-	temporary            Status = "temporary"
-	packageOnlyLongTerm  Status = "package_only_long_term"
-	packageOnlyTemporary Status = "package_only_temporary"
-	mailOnlyLongTerm     Status = "mail_only_long_term"
-	mailOnlyTemporary    Status = "mail_only_temporary"
-	expired              Status = "expired"
-	deleted              Status = "deleted"
+	LongTerm             Status = "long_term"
+	Temporary            Status = "temporary"
+	PackageOnlyLongTerm  Status = "package_only_long_term"
+	PackageOnlyTemporary Status = "package_only_temporary"
+	MailOnlyLongTerm     Status = "mail_only_long_term"
+	MailOnlyTemporary    Status = "mail_only_temporary"
+	Expired              Status = "expired"
+	Deleted              Status = "deleted"
 )
 
 // Scan - not quite sure what this does
@@ -51,29 +51,29 @@ type AddressAssignment struct {
 }
 
 var validPackageStatus []Status = []Status{
-	longTerm,
-	temporary,
-	packageOnlyLongTerm,
-	packageOnlyTemporary,
+	LongTerm,
+	Temporary,
+	PackageOnlyLongTerm,
+	PackageOnlyTemporary,
 }
 
 var validMailStatus []Status = []Status{
-	longTerm,
-	temporary,
-	mailOnlyLongTerm,
-	mailOnlyTemporary,
+	LongTerm,
+	Temporary,
+	MailOnlyLongTerm,
+	MailOnlyTemporary,
 }
 
 var temporaryStatus []Status = []Status{
-	temporary,
-	packageOnlyTemporary,
-	mailOnlyTemporary,
+	Temporary,
+	PackageOnlyTemporary,
+	MailOnlyTemporary,
 }
 
 var longTermStatus []Status = []Status{
-	longTerm,
-	mailOnlyLongTerm,
-	packageOnlyLongTerm,
+	LongTerm,
+	MailOnlyLongTerm,
+	PackageOnlyLongTerm,
 }
 
 func contains(arr []Status, status Status) bool {
