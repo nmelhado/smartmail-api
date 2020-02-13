@@ -46,7 +46,7 @@ func Database() {
 }
 
 func refreshTables() error {
-	err := server.DB.DropTableIfExists(&models.Address{}, &models.User{},&models.AddressAssignment{}).Error
+	err := server.DB.DropTableIfExists(&models.AddressAssignment{}, &models.User{},&models.Address{}).Error
 	if err != nil {
 		return err
 	}

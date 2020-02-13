@@ -37,17 +37,6 @@ func Database() {
 
 	TestDbDriver := os.Getenv("TestDbDriver")
 
-	if TestDbDriver == "mysql" {
-		DBURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", os.Getenv("TestDbUser"), os.Getenv("TestDbPassword"), os.Getenv("TestDbHost"), os.Getenv("TestDbPort"), os.Getenv("TestDbName"))
-		server.DB, err = gorm.Open(TestDbDriver, DBURL)
-		if err != nil {
-			fmt.Printf("Cannot connect to %s database\n", TestDbDriver)
-			log.Fatal("This is the error:", err)
-		} else {
-			fmt.Printf("We are connected to the %s database\n", TestDbDriver)
-		}
-	}
-	if TestDbDriver == "postgres" {
 		DBURL := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", os.Getenv("TestDbHost"), os.Getenv("TestDbPort"), os.Getenv("TestDbUser"), os.Getenv("TestDbName"), os.Getenv("TestDbPassword"))
 		server.DB, err = gorm.Open(TestDbDriver, DBURL)
 		if err != nil {
@@ -56,169 +45,138 @@ func Database() {
 		} else {
 			fmt.Printf("We are connected to the %s database\n", TestDbDriver)
 		}
-	}
-	if TestDbDriver == "sqlite3" {
-		//DBURL := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", DbHost, DbPort, DbUser, DbName, DbPassword)
-		testDbName := os.Getenv("TestDbName")
-		server.DB, err = gorm.Open(TestDbDriver, testDbName)
-		if err != nil {
-			fmt.Printf("Cannot connect to %s database\n", TestDbDriver)
-			log.Fatal("This is the error:", err)
-		} else {
-			fmt.Printf("We are connected to the %s database\n", TestDbDriver)
-		}
-		server.DB.Exec("PRAGMA foreign_keys = ON")
-	}
 
 }
 
-func refreshUserTable() error {
-	err := server.DB.Debug().DropTableIfExists(&models.User{}).Error
+func refreshTables() error {
+	err := server.DB.DropTableIfExists(&models.AddressAssignment{}, &models.User{},&models.Address{}).Error
 	if err != nil {
 		return err
 	}
-	err = server.DB.Debug().AutoMigrate(&models.User{}).Error
+	err = server.DB.AutoMigrate(&models.User{}, &models.Address{},&models.AddressAssignment{}).Error
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Successfully refreshed table")
-	log.Printf("refreshUserTable routine OK !!!")
-	return nil
-}
-
-func seedOneUser() (models.User, error) {
-
-	_ = refreshUserTable()
-
-	user := models.User{
-		Nickname: "Pet",
-		Email:    "pet@gmail.com",
-		Password: "password",
-	}
-
-	err := server.DB.Debug().Model(&models.User{}).Create(&user).Error
-	if err != nil {
-		log.Fatalf("cannot seed users table: %v", err)
-	}
-
-	log.Printf("seedOneUser routine OK !!!")
-	return user, nil
-}
-
-func seedUsers() error {
-
-	users := []models.User{
-		models.User{
-			Nickname: "Steven victor",
-			Email:    "steven@gmail.com",
-			Password: "password",
-		},
-		models.User{
-			Nickname: "Kenny Morris",
-			Email:    "kenny@gmail.com",
-			Password: "password",
-		},
-	}
-
-	for i := range users {
-		err := server.DB.Debug().Model(&models.User{}).Create(&users[i]).Error
-		if err != nil {
-			return err
-		}
-	}
-
-	log.Printf("seedUsers routine OK !!!")
-	return nil
-}
-
-func refreshUserAndPostTable() error {
-
-	// NOTE: when deleting first delete Post as Post is depending on User table
-	err := server.DB.Debug().DropTableIfExists(&models.Post{}, &models.User{}).Error
-	if err != nil {
-		return err
-	}
-	err = server.DB.Debug().AutoMigrate(&models.User{}, &models.Post{}).Error
-	if err != nil {
-		return err
-	}
 	log.Printf("Successfully refreshed tables")
-	log.Printf("refreshUserAndPostTable routine OK !!!")
 	return nil
 }
 
-func seedOneUserAndOnePost() (models.Post, error) {
-
-	err := refreshUserAndPostTable()
-	if err != nil {
-		return models.Post{}, err
-	}
-	user := models.User{
-		Nickname: "Sam Phil",
-		Email:    "sam@gmail.com",
-		Password: "password",
-	}
-	err = server.DB.Debug().Model(&models.User{}).Create(&user).Error
-	if err != nil {
-		return models.Post{}, err
-	}
-	post := models.Post{
-		Title:    "This is the title sam",
-		Content:  "This is the content sam",
-		AuthorID: user.ID,
-	}
-	err = server.DB.Debug().Model(&models.Post{}).Create(&post).Error
-	if err != nil {
-		return models.Post{}, err
-	}
-
-	log.Printf("seedOneUserAndOnePost routine OK !!!")
-	return post, nil
-}
-
-func seedUsersAndPosts() ([]models.User, []models.Post, error) {
+func seedUsersAndAddresses() ([]models.User, []models.Address, []models.AddressAssignment, error) {
 
 	var err error
 
 	if err != nil {
-		return []models.User{}, []models.Post{}, err
+		return []models.User, []models.Address, []models.AddressAssignment, err
 	}
+	
 	var users = []models.User{
 		models.User{
-			Nickname: "Steven victor",
+			CosmoID: "12345678",
+			FirstName: "Test",
+			LastName: "McGee",
+			Phone: "6467085265",
+			Authority: models.UserAuth,
 			Email:    "steven@gmail.com",
 			Password: "password",
 		},
 		models.User{
-			Nickname: "Magu Frank",
-			Email:    "magu@gmail.com",
-			Password: "password",
+			CosmoID: "ABCDEFGH",
+			FirstName: "Alfred",
+			LastName: "Pennyworth",
+			Phone: "2125478965",
+			Authority: models.UserAuth,
+			Email:    "alfred@gmail.com",
+			Password: "BigScAryBats!",
 		},
-	}
-	var posts = []models.Post{
-		models.Post{
-			Title:   "Title 1",
-			Content: "Hello world 1",
+		models.User{
+			CosmoID: "1B3D5F7H",
+			FirstName: "Doug",
+			LastName: "Mailman",
+			Phone: "18005369377",
+			Authority: models.MailerAuth,
+			Email:    "Doug@pigeon.com",
+			Password: "IL0veMai1!",
 		},
-		models.Post{
-			Title:   "Title 2",
-			Content: "Hello world 2",
+		models.User{
+			CosmoID: "12LIGHT3",
+			FirstName: "Nikola",
+			LastName: "Tesla",
+			Phone: "3475389639",
+			Authority: models.AdminAuth,
+			Email:    "nikola@tesla.com",
+			Password: "fuEdison!",
 		},
 	}
 
-	for i := range users {
-		err = server.DB.Debug().Model(&models.User{}).Create(&users[i]).Error
+	var addresses = []models.Address{
+		models.Address{
+			Nickname:   "Home",
+			LineOne: "123 Fake Street",
+			City: "New York",
+			State: "NY",
+			ZipCode: "10021",
+			Country: "United States",
+		},
+		models.Address{
+			Nickname:   "Work",
+			LineOne: "347 Wayne Avenue",
+			LineTwo: "Building B",
+			UnitNumber: "52B",
+			BusinessName: "Wayne Enterprises",
+			BusinessName: "Bruce Wayne",
+			City: "Gotham",
+			State: "NY",
+			ZipCode: "106745",
+			Country: "United States",
+		},
+		models.Address{
+			Nickname:   "Bat Cave",
+			LineOne: "1 Martha Boulevard",
+			City: "Gotham",
+			State: "NY",
+			ZipCode: "106744",
+			Country: "United States",
+		},
+		models.Address{
+			LineOne: "353 Main Street",
+			City: "Dallas",
+			State: "TX",
+			ZipCode: "34567",
+			Country: "United States",
+		},
+		models.Address{
+			Nickname:   "Lab",
+			LineOne: "26 Electric Avenue",
+			City: "New York",
+			State: "NY",
+			ZipCode: "10021",
+			Country: "United States",
+		},
+	}
+	
+	
+	
+
+	var addressesAssignments = []models.AddressAssignment{
+		models.AddressAssignment{
+			Status: models.LongTerm,
+			StartDate: time.Time(),
+		},
+	}
+	
+
+	for i, _ := range users {
+		err = server.DB.Model(&models.User{}).Create(&users[i]).Error
 		if err != nil {
 			log.Fatalf("cannot seed users table: %v", err)
 		}
 		posts[i].AuthorID = users[i].ID
 
-		err = server.DB.Debug().Model(&models.Post{}).Create(&posts[i]).Error
+		err = server.DB.Model(&models.Post{}).Create(&posts[i]).Error
 		if err != nil {
 			log.Fatalf("cannot seed posts table: %v", err)
 		}
 	}
-	log.Printf("seedUsersAndPosts routine OK !!!")
 	return users, posts, nil
 }
