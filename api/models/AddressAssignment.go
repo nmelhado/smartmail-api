@@ -159,7 +159,7 @@ func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, user User,
 	var err error
 	address := AddressAssignment{}
 
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, mailOnlyTemporary, temporary, targetDate, targetDate).Find(&address).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, MailOnlyTemporary, Temporary, targetDate, targetDate).Find(&address).Error
 	if err != nil {
 		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validMailStatus, targetDate, targetDate).Find(&address).Error
 		if err != nil {
@@ -182,7 +182,7 @@ func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, user User,
 	var err error
 	address := AddressAssignment{}
 
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, packageOnlyTemporary, temporary, targetDate, targetDate).Find(&address).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, PackageOnlyTemporary, Temporary, targetDate, targetDate).Find(&address).Error
 	if err != nil {
 		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validPackageStatus, targetDate, targetDate).Find(&address).Error
 		if err != nil {
@@ -204,7 +204,7 @@ func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, user User,
 func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uint64) (*[]AddressAssignment, error) {
 	var err error
 	addresses := []AddressAssignment{}
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status <> ?", uid, deleted).Limit(100).Find(&addresses).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status <> ?", uid, Deleted).Limit(100).Find(&addresses).Error
 	if err != nil {
 		return &[]AddressAssignment{}, err
 	}
