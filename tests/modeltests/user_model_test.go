@@ -4,7 +4,6 @@ import (
 	"log"
 	"testing"
 
-	_ "github.com/jinzhu/gorm/dialects/mysql"    //mysql driver
 	_ "github.com/jinzhu/gorm/dialects/postgres" //postgres driver
 	"github.com/nmelhado/pinpoint-api/api/models"
 	"gopkg.in/go-playground/assert.v1"
@@ -12,12 +11,12 @@ import (
 
 func TestFindAllUsers(t *testing.T) {
 
-	err := refreshUserTable()
+	err := refreshTables()
 	if err != nil {
 		log.Fatalf("Error refreshing user table %v\n", err)
 	}
 
-	err = seedUsers()
+	err = seedTables()
 	if err != nil {
 		log.Fatalf("Error seeding user table %v\n", err)
 	}
@@ -32,16 +31,20 @@ func TestFindAllUsers(t *testing.T) {
 
 func TestSaveUser(t *testing.T) {
 
-	err := refreshUserTable()
+	err := refreshTables()
 	if err != nil {
 		log.Fatalf("Error user refreshing table %v\n", err)
 	}
-	newUser := models.User{
-		ID:       1,
-		Email:    "test@gmail.com",
-		Nickname: "test",
-		Password: "password",
-	}
+	models.User{
+			ID: 1,
+			CosmoID: "ABCDEFGH",
+			FirstName: "Test",
+			LastName: "McGee",
+			Phone: "2125478965",
+			Authority: models.UserAuth,
+			Email:    "test@gmail.com",
+			Password: "password!",
+		},
 	savedUser, err := newUser.SaveUser(server.DB)
 	if err != nil {
 		t.Errorf("Error while saving a user: %v\n", err)
@@ -54,12 +57,12 @@ func TestSaveUser(t *testing.T) {
 
 func TestGetUserByID(t *testing.T) {
 
-	err := refreshUserTable()
+	err := refreshTables()
 	if err != nil {
 		log.Fatalf("Error user refreshing table %v\n", err)
 	}
 
-	user, err := seedOneUser()
+	user, err := seedTables()
 	if err != nil {
 		log.Fatalf("cannot seed users table: %v", err)
 	}
@@ -75,12 +78,12 @@ func TestGetUserByID(t *testing.T) {
 
 func TestUpdateAUser(t *testing.T) {
 
-	err := refreshUserTable()
+	err := refreshTables()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	user, err := seedOneUser()
+	user, err := seedTables()
 	if err != nil {
 		log.Fatalf("Cannot seed user: %v\n", err)
 	}
@@ -103,12 +106,12 @@ func TestUpdateAUser(t *testing.T) {
 
 func TestDeleteUser(t *testing.T) {
 
-	err := refreshUserTable()
+	err := refreshTables()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	user, err := seedOneUser()
+	user, err := seedTables()
 
 	if err != nil {
 		log.Fatalf("Cannot seed user: %v\n", err)

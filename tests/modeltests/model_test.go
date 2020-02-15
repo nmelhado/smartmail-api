@@ -62,7 +62,7 @@ func refreshTables() error {
 	return nil
 }
 
-func seedUsersAndAddresses() ([]models.User, []models.Address, []models.AddressAssignment, error) {
+func seedTables() ([]models.User, []models.Address, []models.AddressAssignment, error) {
 
 	var err error
 
