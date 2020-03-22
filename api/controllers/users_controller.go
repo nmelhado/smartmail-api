@@ -8,10 +8,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/nmelhado/pinpoint-api/api/auth"
-	"github.com/nmelhado/pinpoint-api/api/models"
-	"github.com/nmelhado/pinpoint-api/api/responses"
-	"github.com/nmelhado/pinpoint-api/api/utils/formaterror"
+	"github.com/nmelhado/smartmail-api/api/auth"
+	"github.com/nmelhado/smartmail-api/api/models"
+	"github.com/nmelhado/smartmail-api/api/responses"
+	"github.com/nmelhado/smartmail-api/api/utils/formaterror"
 	uuid "github.com/satori/go.uuid"
 )
 

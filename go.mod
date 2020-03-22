@@ -1,4 +1,4 @@
-module github.com/nmelhado/pinpoint-api
+module github.com/nmelhado/smartmail-api
 
 go 1.13
 

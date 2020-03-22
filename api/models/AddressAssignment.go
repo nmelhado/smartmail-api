@@ -15,14 +15,14 @@ import (
 type Status string
 
 const (
-	longTerm             Status = "long_term"
-	temporary            Status = "temporary"
-	packageOnlyLongTerm  Status = "package_only_long_term"
-	packageOnlyTemporary Status = "package_only_temporary"
-	mailOnlyLongTerm     Status = "mail_only_long_term"
-	mailOnlyTemporary    Status = "mail_only_temporary"
-	expired              Status = "expired"
-	deleted              Status = "deleted"
+	LongTerm             Status = "long_term"
+	Temporary            Status = "temporary"
+	PackageOnlyLongTerm  Status = "package_only_long_term"
+	PackageOnlyTemporary Status = "package_only_temporary"
+	MailOnlyLongTerm     Status = "mail_only_long_term"
+	MailOnlyTemporary    Status = "mail_only_temporary"
+	Expired              Status = "expired"
+	Deleted              Status = "deleted"
 )
 
 // Scan - not quite sure what this does
@@ -51,29 +51,29 @@ type AddressAssignment struct {
 }
 
 var validPackageStatus []Status = []Status{
-	longTerm,
-	temporary,
-	packageOnlyLongTerm,
-	packageOnlyTemporary,
+	LongTerm,
+	Temporary,
+	PackageOnlyLongTerm,
+	PackageOnlyTemporary,
 }
 
 var validMailStatus []Status = []Status{
-	longTerm,
-	temporary,
-	mailOnlyLongTerm,
-	mailOnlyTemporary,
+	LongTerm,
+	Temporary,
+	MailOnlyLongTerm,
+	MailOnlyTemporary,
 }
 
 var temporaryStatus []Status = []Status{
-	temporary,
-	packageOnlyTemporary,
-	mailOnlyTemporary,
+	Temporary,
+	PackageOnlyTemporary,
+	MailOnlyTemporary,
 }
 
 var longTermStatus []Status = []Status{
-	longTerm,
-	mailOnlyLongTerm,
-	packageOnlyLongTerm,
+	LongTerm,
+	MailOnlyLongTerm,
+	PackageOnlyLongTerm,
 }
 
 func contains(arr []Status, status Status) bool {
@@ -154,12 +154,12 @@ func (aa *AddressAssignment) UpdateAddressAssignment(db *gorm.DB) (*AddressAssig
 	return aa, nil
 }
 
-// FindMailingAddressWithCosmo allows a mailcarrier to retrieve the correct address to send mail to a user by inputing a User (retieved through CosmoID) and an estimated date of delivery
-func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
+// FindMailingAddressWithSmartID allows a mailcarrier to retrieve the correct address to send mail to a user by inputing a User (retieved through SmartID) and an estimated date of delivery
+func (aa *AddressAssignment) FindMailingAddressWithSmartID(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
 	var err error
 	address := AddressAssignment{}
 
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, mailOnlyTemporary, temporary, targetDate, targetDate).Find(&address).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, MailOnlyTemporary, Temporary, targetDate, targetDate).Find(&address).Error
 	if err != nil {
 		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validMailStatus, targetDate, targetDate).Find(&address).Error
 		if err != nil {
@@ -177,12 +177,12 @@ func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, user User,
 	return &address, nil
 }
 
-// FindPackageAddressWithCosmo allows a mailcarrier to retrieve the correct address to send packages to a user by inputing a User (retieved through CosmoID) and an estimated date of delivery
-func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
+// FindPackageAddressWithSmartID allows a mailcarrier to retrieve the correct address to send packages to a user by inputing a User (retieved through SmartID) and an estimated date of delivery
+func (aa *AddressAssignment) FindPackageAddressWithSmartID(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
 	var err error
 	address := AddressAssignment{}
 
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, packageOnlyTemporary, temporary, targetDate, targetDate).Find(&address).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, PackageOnlyTemporary, Temporary, targetDate, targetDate).Find(&address).Error
 	if err != nil {
 		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validPackageStatus, targetDate, targetDate).Find(&address).Error
 		if err != nil {
@@ -204,7 +204,7 @@ func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, user User,
 func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uint64) (*[]AddressAssignment, error) {
 	var err error
 	addresses := []AddressAssignment{}
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status <> ?", uid, deleted).Limit(100).Find(&addresses).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status <> ?", uid, Deleted).Limit(100).Find(&addresses).Error
 	if err != nil {
 		return &[]AddressAssignment{}, err
 	}

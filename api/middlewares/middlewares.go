@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/nmelhado/pinpoint-api/api/auth"
-	"github.com/nmelhado/pinpoint-api/api/responses"
+	"github.com/nmelhado/smartmail-api/api/auth"
+	"github.com/nmelhado/smartmail-api/api/responses"
 )
 
 func SetMiddlewareJSON(next http.HandlerFunc) http.HandlerFunc {

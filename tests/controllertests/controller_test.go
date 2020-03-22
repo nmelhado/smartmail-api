@@ -8,8 +8,8 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/joho/godotenv"
-	"github.com/nmelhado/pinpoint-api/api/controllers"
-	"github.com/nmelhado/pinpoint-api/api/models"
+	"github.com/nmelhado/smartmail-api/api/controllers"
+	"github.com/nmelhado/smartmail-api/api/models"
 )
 
 var server = controllers.Server{}
