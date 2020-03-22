@@ -11,11 +11,11 @@ import (
 
 func TestFindAllPosts(t *testing.T) {
 
-	err := refreshUserAndPostTable()
+	err := refreshTables()
 	if err != nil {
 		log.Fatalf("Error refreshing user and post table %v\n", err)
 	}
-	_, _, err = seedUsersAndPosts()
+	_, _, _, err = seedTables()
 	if err != nil {
 		log.Fatalf("Error seeding user and post table %v\n", err)
 	}

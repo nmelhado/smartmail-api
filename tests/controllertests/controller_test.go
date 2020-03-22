@@ -34,23 +34,23 @@ func Database() {
 
 	TestDbDriver := os.Getenv("TestDbDriver")
 
-		DBURL := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", os.Getenv("TestDbHost"), os.Getenv("TestDbPort"), os.Getenv("TestDbUser"), os.Getenv("TestDbName"), os.Getenv("TestDbPassword"))
-		server.DB, err = gorm.Open(TestDbDriver, DBURL)
-		if err != nil {
-			fmt.Printf("Cannot connect to %s database\n", TestDbDriver)
-			log.Fatal("This is the error:", err)
-		} else {
-			fmt.Printf("We are connected to the %s database\n", TestDbDriver)
-		}
-	
+	DBURL := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", os.Getenv("TestDbHost"), os.Getenv("TestDbPort"), os.Getenv("TestDbUser"), os.Getenv("TestDbName"), os.Getenv("TestDbPassword"))
+	server.DB, err = gorm.Open(TestDbDriver, DBURL)
+	if err != nil {
+		fmt.Printf("Cannot connect to %s database\n", TestDbDriver)
+		log.Fatal("This is the error:", err)
+	} else {
+		fmt.Printf("We are connected to the %s database\n", TestDbDriver)
+	}
+
 }
 
 func refreshTables() error {
-	err := server.DB.DropTableIfExists(&models.AddressAssignment{}, &models.User{},&models.Address{}).Error
+	err := server.DB.DropTableIfExists(&models.AddressAssignment{}, &models.User{}, &models.Address{}).Error
 	if err != nil {
 		return err
 	}
-	err = server.DB.AutoMigrate(&models.User{}, &models.Address{},&models.AddressAssignment{}).Error
+	err = server.DB.AutoMigrate(&models.User{}, &models.Address{}, &models.AddressAssignment{}).Error
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func seedUsersAndAddresses() ([]models.User, []models.Address, []models.AddressA
 	var err error
 
 	if err != nil {
-		return []models.User, []models.Address, []models.AddressAssignment, err
+		return []models.User{}, []models.Address{}, []models.AddressAssignment{}, err
 	}
 	var users = []models.User{
 		models.User{

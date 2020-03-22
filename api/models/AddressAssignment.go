@@ -14,6 +14,19 @@ import (
 // refer to link for `Status` field: https://github.com/jinzhu/gorm/issues/1978
 type Status string
 
+/*
+postgres command to create enum:
+CREATE TYPE status AS ENUM (
+	'long_term',
+	'temporary',
+	'package_only_long_term',
+	'package_only_temporary',
+	'mail_only_long_term',
+	'mail_only_temporary',
+	'expired',
+	'deleted');
+*/
+
 const (
 	LongTerm             Status = "long_term"
 	Temporary            Status = "temporary"
