@@ -16,6 +16,16 @@ import (
 
 type authority string
 
+/*
+postgres command to create enum:
+CREATE TYPE authority AS ENUM (
+	'user',
+	'mailer',
+	'admin',
+	'engineer',
+	'retailer');
+*/
+
 const (
 	// UserAuth is the user authority type
 	UserAuth authority = "user"
