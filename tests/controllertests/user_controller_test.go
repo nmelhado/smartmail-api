@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/nmelhado/pinpoint-api/api/models"
+	"github.com/nmelhado/smartmail-api/api/models"
 	"gopkg.in/go-playground/assert.v1"
 )
 

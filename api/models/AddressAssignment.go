@@ -154,8 +154,8 @@ func (aa *AddressAssignment) UpdateAddressAssignment(db *gorm.DB) (*AddressAssig
 	return aa, nil
 }
 
-// FindMailingAddressWithCosmo allows a mailcarrier to retrieve the correct address to send mail to a user by inputing a User (retieved through CosmoID) and an estimated date of delivery
-func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
+// FindMailingAddressWithSmartID allows a mailcarrier to retrieve the correct address to send mail to a user by inputing a User (retieved through SmartID) and an estimated date of delivery
+func (aa *AddressAssignment) FindMailingAddressWithSmartID(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
 	var err error
 	address := AddressAssignment{}
 
@@ -177,8 +177,8 @@ func (aa *AddressAssignment) FindMailingAddressWithCosmo(db *gorm.DB, user User,
 	return &address, nil
 }
 
-// FindPackageAddressWithCosmo allows a mailcarrier to retrieve the correct address to send packages to a user by inputing a User (retieved through CosmoID) and an estimated date of delivery
-func (aa *AddressAssignment) FindPackageAddressWithCosmo(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
+// FindPackageAddressWithSmartID allows a mailcarrier to retrieve the correct address to send packages to a user by inputing a User (retieved through SmartID) and an estimated date of delivery
+func (aa *AddressAssignment) FindPackageAddressWithSmartID(db *gorm.DB, user User, targetDate time.Time) (*AddressAssignment, error) {
 	var err error
 	address := AddressAssignment{}
 

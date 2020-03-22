@@ -9,8 +9,8 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/joho/godotenv"
-	"github.com/nmelhado/pinpoint-api/api/controllers"
-	"github.com/nmelhado/pinpoint-api/api/models"
+	"github.com/nmelhado/smartmail-api/api/controllers"
+	"github.com/nmelhado/smartmail-api/api/models"
 	"gopkg.in/guregu/null.v3"
 )
 
@@ -75,7 +75,7 @@ func seedTables() ([]models.User, []models.Address, []models.AddressAssignment, 
 
 	var users = []models.User{
 		models.User{
-			CosmoID:   "ABCDEFGH",
+			SmartID:   "ABCDEFGH",
 			FirstName: "Alfred",
 			LastName:  "Pennyworth",
 			Phone:     "2125478965",
@@ -84,7 +84,7 @@ func seedTables() ([]models.User, []models.Address, []models.AddressAssignment, 
 			Password:  "BigScAryBats!",
 		},
 		models.User{
-			CosmoID:   "1B3D5F7H",
+			SmartID:   "1B3D5F7H",
 			FirstName: "Doug",
 			LastName:  "Mailman",
 			Phone:     "18005369377",
@@ -93,7 +93,7 @@ func seedTables() ([]models.User, []models.Address, []models.AddressAssignment, 
 			Password:  "IL0veMai1!",
 		},
 		models.User{
-			CosmoID:   "12LIGHT3",
+			SmartID:   "12LIGHT3",
 			FirstName: "Nikola",
 			LastName:  "Tesla",
 			Phone:     "3475389639",

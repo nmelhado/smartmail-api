@@ -1,6 +1,6 @@
 package controllers
 
-import "github.com/nmelhado/pinpoint-api/api/middlewares"
+import "github.com/nmelhado/smartmail-api/api/middlewares"
 
 func (s *Server) initializeRoutes() {
 
@@ -23,8 +23,8 @@ func (s *Server) initializeRoutes() {
 	//Address routes
 	s.Router.HandleFunc("/address", middlewares.SetMiddlewareJSON(s.CreateAddress)).Methods("POST")
 	s.Router.HandleFunc("/address/{id}", middlewares.SetMiddlewareJSON(s.GetAddressByID)).Methods("GET")
-	s.Router.HandleFunc("/address/mail/{cosmo_id}/{date}", middlewares.SetMiddlewareJSON(s.GetMailingAddressByCosmoID)).Methods("GET")
-	s.Router.HandleFunc("/address/package/{cosmo_id}/{date}", middlewares.SetMiddlewareJSON(s.GetPackageAddressByCosmoID)).Methods("GET")
+	s.Router.HandleFunc("/address/mail/{smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetMailingAddressBySmartID)).Methods("GET")
+	s.Router.HandleFunc("/address/package/{smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetPackageAddressBySmartID)).Methods("GET")
 	s.Router.HandleFunc("/address/{id}", middlewares.SetMiddlewareJSON(middlewares.SetMiddlewareAuthentication(s.UpdateAddress))).Methods("PUT")
 	s.Router.HandleFunc("/address/{id}", middlewares.SetMiddlewareAuthentication(s.DeleteAddress)).Methods("DELETE")
 }

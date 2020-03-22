@@ -11,7 +11,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"    //mysql database driver
 	_ "github.com/jinzhu/gorm/dialects/postgres" //postgres database driver
 	_ "github.com/jinzhu/gorm/dialects/sqlite"   // sqlite database driver
-	"github.com/nmelhado/pinpoint-api/api/models"
+	"github.com/nmelhado/smartmail-api/api/models"
 )
 
 // Server creates a domain that is used for all API endpoints

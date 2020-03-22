@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	_ "github.com/jinzhu/gorm/dialects/postgres" //postgres driver
-	"github.com/nmelhado/pinpoint-api/api/models"
+	"github.com/nmelhado/smartmail-api/api/models"
 	"gopkg.in/go-playground/assert.v1"
 )
 
@@ -37,7 +37,7 @@ func TestSaveUser(t *testing.T) {
 	}
 
 	newUser := models.User{
-		CosmoID:   "ABCDEFGH",
+		SmartID:   "ABCDEFGH",
 		FirstName: "Test",
 		LastName:  "McGee",
 		Phone:     "2125478965",
@@ -50,7 +50,7 @@ func TestSaveUser(t *testing.T) {
 		t.Errorf("Error while saving a user: %v\n", err)
 		return
 	}
-	assert.Equal(t, newUser.CosmoID, savedUser.CosmoID)
+	assert.Equal(t, newUser.SmartID, savedUser.SmartID)
 	assert.Equal(t, newUser.FirstName, savedUser.FirstName)
 	assert.Equal(t, newUser.LastName, savedUser.LastName)
 	assert.Equal(t, newUser.Phone, savedUser.Phone)
@@ -75,7 +75,7 @@ func TestGetUserByID(t *testing.T) {
 		return
 	}
 	assert.Equal(t, foundUser.ID, users[0].ID)
-	assert.Equal(t, foundUser.CosmoID, users[0].CosmoID)
+	assert.Equal(t, foundUser.SmartID, users[0].SmartID)
 	assert.Equal(t, foundUser.FirstName, users[0].FirstName)
 	assert.Equal(t, foundUser.LastName, users[0].LastName)
 	assert.Equal(t, foundUser.Phone, users[0].Phone)
@@ -106,7 +106,7 @@ func TestUpdateAUser(t *testing.T) {
 		return
 	}
 	assert.Equal(t, updatedUser.ID, users[0].ID)
-	assert.Equal(t, updatedUser.CosmoID, users[0].CosmoID)
+	assert.Equal(t, updatedUser.SmartID, users[0].SmartID)
 	assert.Equal(t, updatedUser.FirstName, userUpdate.FirstName)
 	assert.Equal(t, updatedUser.LastName, users[0].LastName)
 	assert.Equal(t, updatedUser.Phone, users[0].Phone)

@@ -4,7 +4,7 @@ package seed
 // 	"log"
 
 // 	"github.com/jinzhu/gorm"
-// 	"github.com/nmelhado/pinpoint-api/api/models"
+// 	"github.com/nmelhado/smartmail-api/api/models"
 // )
 
 // var users = []models.User{

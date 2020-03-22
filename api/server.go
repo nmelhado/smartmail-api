@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/nmelhado/pinpoint-api/api/controllers"
-	// "github.com/nmelhado/pinpoint-api/api/seed"
+	"github.com/nmelhado/smartmail-api/api/controllers"
+	// "github.com/nmelhado/smartmail-api/api/seed"
 )
 
 var server = controllers.Server{}

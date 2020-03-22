@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/nmelhado/pinpoint-api/api/auth"
-	"github.com/nmelhado/pinpoint-api/api/models"
-	"github.com/nmelhado/pinpoint-api/api/responses"
-	"github.com/nmelhado/pinpoint-api/api/utils/formaterror"
+	"github.com/nmelhado/smartmail-api/api/auth"
+	"github.com/nmelhado/smartmail-api/api/models"
+	"github.com/nmelhado/smartmail-api/api/responses"
+	"github.com/nmelhado/smartmail-api/api/utils/formaterror"
 )
 
 // CreateAddress creates an address and uploads the address to the DB and links it to the user that created it
@@ -180,11 +180,11 @@ func (server *Server) GetAddressByID(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, addressReceived)
 }
 
-// GetMailingAddressByCosmoID retrieves a user's mailing adress using a customer's CosmoID
-func (server *Server) GetMailingAddressByCosmoID(w http.ResponseWriter, r *http.Request) {
+// GetMailingAddressBySmartID retrieves a user's mailing adress using a customer's SmartID
+func (server *Server) GetMailingAddressBySmartID(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
-	cosmoID := vars["cosmo_id"]
+	smartID := vars["smart_id"]
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -192,7 +192,7 @@ func (server *Server) GetMailingAddressByCosmoID(w http.ResponseWriter, r *http.
 	}
 	user := models.User{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("cosmo_id = ?", strings.ToUpper(cosmoID)).Take(&user).Error
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(smartID)).Take(&user).Error
 
 	reqUID, err := auth.ExtractTokenID(r)
 	if err != nil {
@@ -210,23 +210,23 @@ func (server *Server) GetMailingAddressByCosmoID(w http.ResponseWriter, r *http.
 	}
 
 	address := models.AddressAssignment{}
-	addressReceived, err := address.FindMailingAddressWithCosmo(server.DB, user, date)
+	addressReceived, err := address.FindMailingAddressWithSmartID(server.DB, user, date)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	addressResponse := &responses.AddressCosmoIDResponse{}
-	responses.TranslateCosmoAddressResponse(addressReceived, addressResponse)
+	addressResponse := &responses.AddressSmartIDResponse{}
+	responses.TranslateSmartAddressResponse(addressReceived, addressResponse)
 
 	responses.JSON(w, http.StatusOK, addressResponse)
 }
 
-// GetPackageAddressByCosmoID retrieves a user's package adress using a customer's CosmoID
-func (server *Server) GetPackageAddressByCosmoID(w http.ResponseWriter, r *http.Request) {
+// GetPackageAddressBySmartID retrieves a user's package adress using a customer's SmartID
+func (server *Server) GetPackageAddressBySmartID(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
-	cosmoID := vars["cosmo_id"]
+	smartID := vars["smart_id"]
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -234,7 +234,7 @@ func (server *Server) GetPackageAddressByCosmoID(w http.ResponseWriter, r *http.
 	}
 	user := models.User{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("cosmo_id = ?", strings.ToUpper(cosmoID)).Take(&user).Error
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(smartID)).Take(&user).Error
 
 	reqUID, err := auth.ExtractTokenID(r)
 	if err != nil {
@@ -251,14 +251,14 @@ func (server *Server) GetPackageAddressByCosmoID(w http.ResponseWriter, r *http.
 	}
 
 	address := models.AddressAssignment{}
-	addressReceived, err := address.FindPackageAddressWithCosmo(server.DB, user, date)
+	addressReceived, err := address.FindPackageAddressWithSmartID(server.DB, user, date)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	addressResponse := &responses.AddressCosmoIDResponse{}
-	responses.TranslateCosmoAddressResponse(addressReceived, addressResponse)
+	addressResponse := &responses.AddressSmartIDResponse{}
+	responses.TranslateSmartAddressResponse(addressReceived, addressResponse)
 
 	responses.JSON(w, http.StatusOK, addressResponse)
 }

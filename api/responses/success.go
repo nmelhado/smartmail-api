@@ -3,7 +3,7 @@ package responses
 import (
 	"time"
 
-	"github.com/nmelhado/pinpoint-api/api/models"
+	"github.com/nmelhado/smartmail-api/api/models"
 	"gopkg.in/guregu/null.v3"
 )
 
@@ -15,7 +15,7 @@ type TokenResponse struct {
 
 // Struct returned when a new user is created
 type CreateUserResponse struct {
-	CosmoID   string    `json:"cosmo_id"`
+	SmartID   string    `json:"smart_id"`
 	Email     string    `json:"email"`
 	FirstName string    `json:"first_name"`
 	LastName  string    `json:"last_name"`
@@ -25,7 +25,7 @@ type CreateUserResponse struct {
 
 // Struct returned when a new user and address are simultaneously created
 type CreateUserAndAddressResponse struct {
-	CosmoID      string    `json:"cosmo_id"`
+	SmartID      string    `json:"smart_id"`
 	Email        string    `json:"email"`
 	FirstName    string    `json:"first_name"`
 	LastName     string    `json:"last_name"`
@@ -63,8 +63,8 @@ type AddressResponse struct {
 }
 
 // Used for creating, updating, and retrieving a single address
-type AddressCosmoIDResponse struct {
-	CosmoID      string      `json:"cosmo_id"`
+type AddressSmartIDResponse struct {
+	SmartID      string      `json:"smart_id"`
 	FirstName    string      `json:"first_name"`
 	LastName     string      `json:"last_name"`
 	BusinessName string      `json:"business_name,omitempty"`
@@ -102,8 +102,8 @@ func TranslateAddressResponse(originalAddress *models.AddressAssignment, reply *
 	}
 }
 
-func TranslateCosmoAddressResponse(originalAddress *models.AddressAssignment, reply *AddressCosmoIDResponse) {
-	reply.CosmoID = originalAddress.User.CosmoID
+func TranslateSmartAddressResponse(originalAddress *models.AddressAssignment, reply *AddressSmartIDResponse) {
+	reply.SmartID = originalAddress.User.SmartID
 	reply.FirstName = originalAddress.User.FirstName
 	reply.LastName = originalAddress.User.LastName
 	reply.BusinessName = originalAddress.Address.BusinessName.String
@@ -122,7 +122,7 @@ func TranslateCosmoAddressResponse(originalAddress *models.AddressAssignment, re
 }
 
 func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, reply *CreateUserAndAddressResponse) {
-	reply.CosmoID = originalAddress.User.CosmoID
+	reply.SmartID = originalAddress.User.SmartID
 	reply.Email = originalAddress.User.Email
 	reply.Phone = originalAddress.User.Phone
 	reply.FirstName = originalAddress.User.FirstName

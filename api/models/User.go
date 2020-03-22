@@ -42,7 +42,7 @@ func (a authority) Value() (driver.Value, error) {
 // User is the DB and json structure for a user
 type User struct {
 	ID        uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
-	CosmoID   string    `gorm:"size:8;not null;unique;unique_index:ix_cosmo_id" json:"cosmo_id"`
+	SmartID   string    `gorm:"size:8;not null;unique;unique_index:ix_smart_id" json:"smart_id"`
 	Email     string    `gorm:"size:100;not null;unique" json:"email"`
 	FirstName string    `gorm:"size:30;not null;" json:"first_name"`
 	LastName  string    `gorm:"size:30;not null;" json:"last_name"`
@@ -82,7 +82,7 @@ func (u *User) BeforeSave() error {
 // Prepare sanitizes a user object before other operations are performed
 func (u *User) Prepare() {
 	u.ID = uuid.UUID{}
-	u.CosmoID = html.EscapeString(strings.ToUpper(strings.TrimSpace(u.CosmoID)))
+	u.SmartID = html.EscapeString(strings.ToUpper(strings.TrimSpace(u.SmartID)))
 	u.FirstName = html.EscapeString(strings.TrimSpace(u.FirstName))
 	u.LastName = html.EscapeString(strings.TrimSpace(u.LastName))
 	u.Email = html.EscapeString(strings.ToLower(strings.TrimSpace(u.Email)))
