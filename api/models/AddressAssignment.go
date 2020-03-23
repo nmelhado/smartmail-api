@@ -235,3 +235,17 @@ func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uint64) (*
 	}
 	return &addresses, nil
 }
+
+// DeleteAddressAssignment removes an address assignment from the DB (should never use this unless correcting an accidental addition)
+func (aa *AddressAssignment) DeleteAddressAssignment(db *gorm.DB, aaid uint64) (int64, error) {
+
+	db = db.Debug().Model(&AddressAssignment{}).Where("id = ?", aaid).Take(&AddressAssignment{}).Delete(&AddressAssignment{})
+
+	if db.Error != nil {
+		if gorm.IsRecordNotFoundError(db.Error) {
+			return 0, errors.New("Address not found")
+		}
+		return 0, db.Error
+	}
+	return db.RowsAffected, nil
+}

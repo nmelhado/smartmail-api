@@ -103,6 +103,7 @@ func (server *Server) CreateUserAndAddress(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	password := addressAssignment.User.Password
 	addressAssignment.User.Prepare()
 	err = addressAssignment.User.Validate("create")
 	if err != nil {
@@ -154,8 +155,21 @@ func (server *Server) CreateUserAndAddress(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	token, _, err := server.SignIn(user.Email, password)
+	if err != nil {
+		_, _ = addressAssignment.User.DeleteUser(server.DB, user.ID)
+		_, _ = addressAssignment.Address.DeleteAddress(server.DB, createAddress.ID)
+		_, _ = addressAssignment.DeleteAddressAssignment(server.DB, finalAddress.ID)
+		formattedError := formaterror.FormatError(err.Error())
+		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
+		return
+	}
+
 	addressResponse := &responses.CreateUserAndAddressResponse{}
 	responses.TranslateUserAndAddressResponse(finalAddress, addressResponse)
+
+	addressResponse.Token = token
+	addressResponse.Expires = time.Now().Add(time.Hour * 1)
 
 	w.Header().Set("Location", fmt.Sprintf("%s%s/%d", r.Host, r.URL.Path, createAddress.ID))
 	responses.JSON(w, http.StatusCreated, addressResponse)
