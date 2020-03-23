@@ -4,17 +4,20 @@ import (
 	"time"
 
 	"github.com/nmelhado/smartmail-api/api/models"
+	uuid "github.com/satori/go.uuid"
 	"gopkg.in/guregu/null.v3"
 )
 
-// Struct returned when logging in
+// TokenResponse is the struct returned when logging in
 type TokenResponse struct {
+	ID      uuid.UUID `json:"id"`
 	Token   string    `json:"token"`
 	Expires time.Time `json:"expires"`
 }
 
-// Struct returned when a new user is created
+// CreateUserResponse is the struct returned when a new user is created
 type CreateUserResponse struct {
+	ID        uuid.UUID `json:"id"`
 	SmartID   string    `json:"smart_id"`
 	Email     string    `json:"email"`
 	FirstName string    `json:"first_name"`
@@ -23,8 +26,9 @@ type CreateUserResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// Struct returned when a new user and address are simultaneously created
+// CreateUserAndAddressResponse is the struct returned when a new user and address are simultaneously created
 type CreateUserAndAddressResponse struct {
+	ID           uuid.UUID `json:"id"`
 	SmartID      string    `json:"smart_id"`
 	Email        string    `json:"email"`
 	FirstName    string    `json:"first_name"`
@@ -41,9 +45,11 @@ type CreateUserAndAddressResponse struct {
 	Country      string    `json:"country"`
 	AddressPhone string    `json:"phone_for_address,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`
+	Token        string    `json:"token"`
+	Expires      time.Time `json:"expires"`
 }
 
-// Used for creating, updating, and retrieving a single address
+// AddressResponse is used for creating, updating, and retrieving a single address
 type AddressResponse struct {
 	Status       models.Status `json:"address_type"`
 	StartDate    time.Time     `json:"start_date"`
@@ -62,7 +68,7 @@ type AddressResponse struct {
 	Phone        null.String   `json:"phone,omitempty"`
 }
 
-// Used for creating, updating, and retrieving a single address
+// AddressSmartIDResponse is used for creating, updating, and retrieving a single address
 type AddressSmartIDResponse struct {
 	SmartID      string      `json:"smart_id"`
 	FirstName    string      `json:"first_name"`
@@ -122,6 +128,7 @@ func TranslateSmartAddressResponse(originalAddress *models.AddressAssignment, re
 }
 
 func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, reply *CreateUserAndAddressResponse) {
+	reply.ID = originalAddress.User.ID
 	reply.SmartID = originalAddress.User.SmartID
 	reply.Email = originalAddress.User.Email
 	reply.Phone = originalAddress.User.Phone
