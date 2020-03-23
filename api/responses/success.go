@@ -28,25 +28,9 @@ type CreateUserResponse struct {
 
 // CreateUserAndAddressResponse is the struct returned when a new user and address are simultaneously created
 type CreateUserAndAddressResponse struct {
-	ID           uuid.UUID `json:"id"`
-	SmartID      string    `json:"smart_id"`
-	Email        string    `json:"email"`
-	FirstName    string    `json:"first_name"`
-	LastName     string    `json:"last_name"`
-	Phone        string    `json:"phone"`
-	BusinessName string    `json:"business_name,omitempty"`
-	AttentionTo  string    `json:"attention_to,omitempty"`
-	LineOne      string    `json:"line_one"`
-	LineTwo      string    `json:"line_two,omitempty"`
-	UnitNumber   string    `json:"unit_number,omitempty"`
-	City         string    `json:"city"`
-	State        string    `json:"state"`
-	ZipCode      string    `json:"zip_code"`
-	Country      string    `json:"country"`
-	AddressPhone string    `json:"phone_for_address,omitempty"`
-	CreatedAt    time.Time `json:"created_at"`
-	Token        string    `json:"token"`
-	Expires      time.Time `json:"expires"`
+	User    CreateUserResponse `json:"user"`
+	Token   string             `json:"token"`
+	Expires time.Time          `json:"expires"`
 }
 
 // AddressResponse is used for creating, updating, and retrieving a single address
@@ -128,21 +112,11 @@ func TranslateSmartAddressResponse(originalAddress *models.AddressAssignment, re
 }
 
 func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, reply *CreateUserAndAddressResponse) {
-	reply.ID = originalAddress.User.ID
-	reply.SmartID = originalAddress.User.SmartID
-	reply.Email = originalAddress.User.Email
-	reply.Phone = originalAddress.User.Phone
-	reply.FirstName = originalAddress.User.FirstName
-	reply.LastName = originalAddress.User.LastName
-	reply.BusinessName = originalAddress.Address.BusinessName.String
-	reply.AttentionTo = originalAddress.Address.AttentionTo.String
-	reply.LineOne = originalAddress.Address.LineOne
-	reply.LineTwo = originalAddress.Address.LineTwo.String
-	reply.UnitNumber = originalAddress.Address.UnitNumber.String
-	reply.City = originalAddress.Address.City
-	reply.State = originalAddress.Address.State
-	reply.ZipCode = originalAddress.Address.ZipCode
-	reply.Country = originalAddress.Address.Country
-	reply.AddressPhone = originalAddress.Address.Phone.String
-	reply.CreatedAt = originalAddress.User.CreatedAt
+	reply.User.ID = originalAddress.User.ID
+	reply.User.SmartID = originalAddress.User.SmartID
+	reply.User.Email = originalAddress.User.Email
+	reply.User.Phone = originalAddress.User.Phone
+	reply.User.FirstName = originalAddress.User.FirstName
+	reply.User.LastName = originalAddress.User.LastName
+	reply.User.CreatedAt = originalAddress.User.CreatedAt
 }
