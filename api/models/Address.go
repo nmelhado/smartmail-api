@@ -24,6 +24,8 @@ type Address struct {
 	ZipCode      string      `gorm:"size:255;not null;" json:"zip_code"`
 	Country      string      `gorm:"size:255;not null;" json:"country"`
 	Phone        null.String `gorm:"size:255;" json:"phone"`
+	Latitude     float64     `json:"latitude"`
+	Longitude    float64     `json:"longitude"`
 	CreatedAt    time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt    time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
@@ -111,27 +113,8 @@ func (a *Address) FindAddressByID(db *gorm.DB, aid uint64) (*Address, error) {
 
 // UpdateAddress updates the values of an address (this is for correcting an address, NOT updating a user's current address)
 func (a *Address) UpdateAddress(db *gorm.DB) (*Address, error) {
-
 	var err error
-	// db = db.Debug().Model(&Post{}).Where("id = ?", pid).Take(&Post{}).UpdateColumns(
-	// 	map[string]interface{}{
-	// 		"title":      p.Title,
-	// 		"content":    p.Content,
-	// 		"updated_at": time.Now(),
-	// 	},
-	// )
-	// err = db.Debug().Model(&Post{}).Where("id = ?", pid).Take(&p).Error
-	// if err != nil {
-	// 	return &Post{}, err
-	// }
-	// if p.ID != 0 {
-	// 	err = db.Debug().Model(&User{}).Where("id = ?", p.AuthorID).Take(&p.Author).Error
-	// 	if err != nil {
-	// 		return &Post{}, err
-	// 	}
-	// }
 
-	// Need to change which values to update
 	err = db.Debug().Model(&Address{}).Where("id = ?", a.ID).Updates(
 		Address{
 			Nickname:     a.Nickname,
@@ -145,6 +128,8 @@ func (a *Address) UpdateAddress(db *gorm.DB) (*Address, error) {
 			ZipCode:      a.ZipCode,
 			Country:      a.Country,
 			Phone:        a.Phone,
+			Latitude:     a.Latitude,
+			Longitude:    a.Longitude,
 			UpdatedAt:    time.Now()}).Error
 	if err != nil {
 		return &Address{}, err
