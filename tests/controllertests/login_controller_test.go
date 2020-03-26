@@ -42,7 +42,7 @@ func TestSignIn(t *testing.T) {
 		{
 			email:        "Wrong email",
 			password:     "password",
-			errorMessage: "record not found",
+			errorMessage: "User not found",
 		},
 	}
 
