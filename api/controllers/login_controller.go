@@ -10,7 +10,6 @@ import (
 	"github.com/nmelhado/smartmail-api/api/models"
 	"github.com/nmelhado/smartmail-api/api/responses"
 	"github.com/nmelhado/smartmail-api/api/utils/formaterror"
-	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,21 +33,31 @@ func (server *Server) Login(w http.ResponseWriter, r *http.Request) {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	token, userID, err := server.SignIn(user.Email, user.Password)
+	token, validUser, err := server.SignIn(user.Email, user.Password)
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
 		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
 		return
 	}
-	response := responses.TokenResponse{}
-	response.ID = userID
-	response.Token = token
-	response.Expires = time.Now().Add(time.Hour * 1)
+
+	addresses, finalUser, err := server.RetrieveAllUserAddresses(validUser)
+	if err != nil {
+		formattedError := formaterror.FormatError(err.Error())
+		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
+		return
+	}
+
+	response := responses.UserAndAddressResponse{
+		User:      finalUser,
+		Addresses: addresses,
+		Token:     token,
+		Expires:   time.Now().Add(time.Hour * 1),
+	}
 	responses.JSON(w, http.StatusOK, response)
 }
 
 // SignIn retrieves a token that is used for API endpoints
-func (server *Server) SignIn(email, password string) (string, uuid.UUID, error) {
+func (server *Server) SignIn(email, password string) (string, models.User, error) {
 
 	var err error
 
@@ -56,12 +65,36 @@ func (server *Server) SignIn(email, password string) (string, uuid.UUID, error) 
 
 	err = server.DB.Debug().Model(models.User{}).Where("email = ?", email).Take(&user).Error
 	if err != nil {
-		return "", uuid.NewV4(), err
+		return "", models.User{}, err
 	}
 	err = models.VerifyPassword(user.Password, password)
 	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
-		return "", uuid.NewV4(), err
+		return "", models.User{}, err
 	}
 	token, err := auth.CreateToken(user.ID)
-	return token, user.ID, err
+	return token, user, err
+}
+
+// RetrieveAllUserAddresses retrieves all non deleted addresses for a user
+func (server *Server) RetrieveAllUserAddresses(user models.User) (finalAddresses []responses.BasicAddress, finalUser responses.CreateUserResponse, err error) {
+	addressAssignment := models.AddressAssignment{}
+
+	addresses, err := addressAssignment.FindAllAddressesForUser(server.DB, user.ID)
+	if err != nil {
+		return
+	}
+
+	finalUser = responses.CreateUserResponse{
+		ID:        user.ID,
+		SmartID:   user.SmartID,
+		Email:     user.Email,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Phone:     user.Phone,
+		CreatedAt: user.CreatedAt,
+	}
+
+	finalAddresses = responses.TranslateAddresses(addresses)
+
+	return
 }
