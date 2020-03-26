@@ -29,6 +29,7 @@ type UserAndAddressResponse struct {
 
 // BasicAddress is used to return an address to the UI
 type BasicAddress struct {
+	Nickname     null.String   `json:"nickname"`
 	Status       models.Status `json:"address_type"`
 	StartDate    time.Time     `json:"start_date"`
 	EndDate      string        `json:"end_date,omitempty"`
@@ -42,6 +43,8 @@ type BasicAddress struct {
 	ZipCode      string        `json:"zip_code"`
 	Country      string        `json:"country"`
 	Phone        null.String   `json:"phone,omitempty"`
+	Latitude     float64       `json:"latitude"`
+	Longitude    float64       `json:"longitude"`
 }
 
 // AddressResponse is used for creating, updating, and retrieving a single address
@@ -135,6 +138,7 @@ func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, 
 	reply.User.CreatedAt = originalAddress.User.CreatedAt
 
 	replyAddress := BasicAddress{
+		Nickname:     originalAddress.Address.Nickname,
 		Status:       originalAddress.Status,
 		StartDate:    originalAddress.StartDate,
 		BusinessName: originalAddress.Address.BusinessName.String,
@@ -147,11 +151,13 @@ func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, 
 		ZipCode:      originalAddress.Address.ZipCode,
 		Country:      originalAddress.Address.Country,
 		Phone:        originalAddress.Address.Phone,
+		Latitude:     originalAddress.Address.Latitude,
+		Longitude:    originalAddress.Address.Longitude,
 	}
 	if originalAddress.EndDate.Valid {
 		replyAddress.EndDate = originalAddress.EndDate.Time.String()
 	}
-	if !replyAddress.Phone.Valid {
+	if !replyAddress.Phone.Valid || replyAddress.Phone.String == "" {
 		replyAddress.Phone.SetValid(originalAddress.User.Phone)
 	}
 	reply.Addresses = []BasicAddress{replyAddress}
@@ -161,6 +167,7 @@ func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, 
 func TranslateAddresses(originalAddresses *[]models.AddressAssignment) (addresses []BasicAddress) {
 	for _, address := range *originalAddresses {
 		nextAddress := BasicAddress{
+			Nickname:     address.Address.Nickname,
 			Status:       address.Status,
 			StartDate:    address.StartDate,
 			BusinessName: address.Address.BusinessName.String,
@@ -173,11 +180,13 @@ func TranslateAddresses(originalAddresses *[]models.AddressAssignment) (addresse
 			ZipCode:      address.Address.ZipCode,
 			Country:      address.Address.Country,
 			Phone:        address.Address.Phone,
+			Latitude:     address.Address.Latitude,
+			Longitude:    address.Address.Longitude,
 		}
 		if address.EndDate.Valid {
 			nextAddress.EndDate = address.EndDate.Time.String()
 		}
-		if !nextAddress.Phone.Valid {
+		if !nextAddress.Phone.Valid || nextAddress.Phone.String == "" {
 			nextAddress.Phone.SetValid(address.User.Phone)
 		}
 		addresses = append(addresses, nextAddress)

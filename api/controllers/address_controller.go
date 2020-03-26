@@ -17,6 +17,23 @@ import (
 	"github.com/nmelhado/smartmail-api/api/utils/formaterror"
 )
 
+type geoInfo struct {
+	Results []result `json:"results"`
+}
+
+type result struct {
+	Geometry geometry `json:"geometry"`
+}
+
+type geometry struct {
+	Location latLng `json:"location"`
+}
+
+type latLng struct {
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
+}
+
 // CreateAddress creates an address and uploads the address to the DB and links it to the user that created it
 func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
@@ -124,6 +141,24 @@ func (server *Server) CreateUserAndAddress(w http.ResponseWriter, r *http.Reques
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
+
+	geoCodeaddress := strings.ReplaceAll(addressAssignment.Address.LineOne+" "+addressAssignment.Address.City+" "+addressAssignment.Address.State+" "+addressAssignment.Address.ZipCode, " ", "+")
+
+	res, err := http.Get("https://maps.googleapis.com/maps/api/geocode/json?address=" + geoCodeaddress + "&key=AIzaSyARoO29--UJnqVy2U5KcOp9qyrtzNl097c")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	resBodyody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err.Error())
+	}
+	var geoInfo geoInfo
+	json.Unmarshal([]byte(resBodyody), &geoInfo)
+	fmt.Printf("Lat: %+v,   Lng: %+v", geoInfo.Results[0].Geometry.Location.Lat, geoInfo.Results[0].Geometry.Location.Lng)
+
+	addressAssignment.Address.Latitude = geoInfo.Results[0].Geometry.Location.Lat
+	addressAssignment.Address.Longitude = geoInfo.Results[0].Geometry.Location.Lng
 
 	addressAssignment.UserID = user.ID
 
