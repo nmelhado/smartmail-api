@@ -165,7 +165,7 @@ func (server *Server) CreateUserAndAddress(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	addressResponse := &responses.CreateUserAndAddressResponse{}
+	addressResponse := &responses.UserAndAddressResponse{}
 	responses.TranslateUserAndAddressResponse(finalAddress, addressResponse)
 
 	addressResponse.Token = token

@@ -214,7 +214,7 @@ func (aa *AddressAssignment) FindPackageAddressWithSmartID(db *gorm.DB, user Use
 }
 
 // FindAllAddressesForUser retieves the last 100 addresses a user has linked to their account. Used in UI to provide address history
-func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uint64) (*[]AddressAssignment, error) {
+func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uuid.UUID) (*[]AddressAssignment, error) {
 	var err error
 	addresses := []AddressAssignment{}
 	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status <> ?", uid, Deleted).Limit(100).Find(&addresses).Error
