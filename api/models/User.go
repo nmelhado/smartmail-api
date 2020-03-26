@@ -56,7 +56,7 @@ type User struct {
 	Email     string    `gorm:"size:100;not null;unique" json:"email"`
 	FirstName string    `gorm:"size:30;not null;" json:"first_name"`
 	LastName  string    `gorm:"size:30;not null;" json:"last_name"`
-	Phone     string    `gorm:"size:30;not null;unique" json:"phone"`
+	Phone     string    `gorm:"size:30;not null;" json:"phone"`
 	Authority authority `sql:"type:authority" json:"authority"`
 	Password  string    `gorm:"size:100;not null;" json:"password"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
