@@ -98,11 +98,16 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	addressResponse := &responses.AddressResponse{}
-	responses.TranslateAddressResponse(finalAddress, addressResponse)
+	addressResponse := responses.TranslateAddress(finalAddress)
+
+	type addressResponseStruct struct {
+		Address responses.BasicAddress `json:"address"`
+	}
+
+	finalResponse := &addressResponseStruct{addressResponse}
 
 	w.Header().Set("Location", fmt.Sprintf("%s%s/%d", r.Host, r.URL.Path, createAddress.ID))
-	responses.JSON(w, http.StatusCreated, addressResponse)
+	responses.JSON(w, http.StatusCreated, finalResponse)
 }
 
 // CreateUserAndAddress creates a user and address simultaneously

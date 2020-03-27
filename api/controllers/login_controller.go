@@ -80,7 +80,7 @@ func (server *Server) SignIn(email, password string) (string, models.User, error
 func (server *Server) RetrieveAllUserAddresses(user models.User) (finalAddresses []responses.BasicAddress, finalUser responses.CreateUserResponse, err error) {
 	addressAssignment := models.AddressAssignment{}
 
-	addresses, err := addressAssignment.FindAllAddressesForUser(server.DB, user.ID)
+	addresses, err := addressAssignment.FindAllActiveAddressesForUser(server.DB, user.ID)
 	if err != nil {
 		return
 	}

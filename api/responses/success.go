@@ -163,32 +163,38 @@ func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, 
 	reply.Addresses = []BasicAddress{replyAddress}
 }
 
+// TranslateAddress converts a single AddressAssignment into a BasicAddresses
+func TranslateAddress(originalAddress *models.AddressAssignment) (address BasicAddress) {
+	address = BasicAddress{
+		Nickname:     originalAddress.Address.Nickname,
+		Status:       originalAddress.Status,
+		StartDate:    originalAddress.StartDate,
+		BusinessName: originalAddress.Address.BusinessName.String,
+		AttentionTo:  originalAddress.Address.AttentionTo.String,
+		LineOne:      originalAddress.Address.LineOne,
+		LineTwo:      originalAddress.Address.LineTwo.String,
+		UnitNumber:   originalAddress.Address.UnitNumber.String,
+		City:         originalAddress.Address.City,
+		State:        originalAddress.Address.State,
+		ZipCode:      originalAddress.Address.ZipCode,
+		Country:      originalAddress.Address.Country,
+		Phone:        originalAddress.Address.Phone,
+		Latitude:     originalAddress.Address.Latitude,
+		Longitude:    originalAddress.Address.Longitude,
+	}
+	if originalAddress.EndDate.Valid {
+		address.EndDate = originalAddress.EndDate.Time.String()
+	}
+	if !address.Phone.Valid || address.Phone.String == "" {
+		address.Phone.SetValid(originalAddress.User.Phone)
+	}
+	return
+}
+
 // TranslateAddresses converts an array of AddressAssignments into an array of BasicAddresses
 func TranslateAddresses(originalAddresses *[]models.AddressAssignment) (addresses []BasicAddress) {
 	for _, address := range *originalAddresses {
-		nextAddress := BasicAddress{
-			Nickname:     address.Address.Nickname,
-			Status:       address.Status,
-			StartDate:    address.StartDate,
-			BusinessName: address.Address.BusinessName.String,
-			AttentionTo:  address.Address.AttentionTo.String,
-			LineOne:      address.Address.LineOne,
-			LineTwo:      address.Address.LineTwo.String,
-			UnitNumber:   address.Address.UnitNumber.String,
-			City:         address.Address.City,
-			State:        address.Address.State,
-			ZipCode:      address.Address.ZipCode,
-			Country:      address.Address.Country,
-			Phone:        address.Address.Phone,
-			Latitude:     address.Address.Latitude,
-			Longitude:    address.Address.Longitude,
-		}
-		if address.EndDate.Valid {
-			nextAddress.EndDate = address.EndDate.Time.String()
-		}
-		if !nextAddress.Phone.Valid || nextAddress.Phone.String == "" {
-			nextAddress.Phone.SetValid(address.User.Phone)
-		}
+		nextAddress := TranslateAddress(&address)
 		addresses = append(addresses, nextAddress)
 	}
 	return
