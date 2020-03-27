@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql/driver"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -89,6 +90,11 @@ var longTermStatus []Status = []Status{
 	PackageOnlyLongTerm,
 }
 
+var expiredAndDeleted []Status = []Status{
+	Expired,
+	Deleted,
+}
+
 func contains(arr []Status, status Status) bool {
 	for _, a := range arr {
 		if a == status {
@@ -133,7 +139,7 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 			return &AddressAssignment{}, err
 		}
 		if len(conflictingAddresses) > 0 {
-			return &AddressAssignment{}, errors.New("conflict with another temporary address - please make sure that the dates for temporary addresses don't overlap")
+			return &AddressAssignment{}, errors.New("There is aonflict with another temporary address change - please make sure that the dates for temporary addresses don't overlap")
 		}
 	}
 	err = db.Debug().Model(&AddressAssignment{}).Create(&aa).Error
@@ -211,6 +217,30 @@ func (aa *AddressAssignment) FindPackageAddressWithSmartID(db *gorm.DB, user Use
 		address.User = user
 	}
 	return &address, nil
+}
+
+// FindAllActiveAddressesForUser retieves the last 100 active addresses a user has linked to their account. Used in UI to provide users currently active addresses
+func (aa *AddressAssignment) FindAllActiveAddressesForUser(db *gorm.DB, uid uuid.UUID) (*[]AddressAssignment, error) {
+	var err error
+	addresses := []AddressAssignment{}
+	today := strings.Split(time.Now().String(), " ")[0]
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status NOT IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", uid, expiredAndDeleted, today, today).Limit(100).Find(&addresses).Error
+	if err != nil {
+		return &[]AddressAssignment{}, err
+	}
+	if len(addresses) > 0 {
+		for i := range addresses {
+			err := db.Debug().Model(&User{}).Where("id = ?", addresses[i].UserID).Take(&addresses[i].User).Error
+			if err != nil {
+				return &[]AddressAssignment{}, err
+			}
+			err = db.Debug().Model(&Address{}).Where("id = ?", addresses[i].AddressID).Take(&addresses[i].Address).Error
+			if err != nil {
+				return &[]AddressAssignment{}, err
+			}
+		}
+	}
+	return &addresses, nil
 }
 
 // FindAllAddressesForUser retieves the last 100 addresses a user has linked to their account. Used in UI to provide address history
