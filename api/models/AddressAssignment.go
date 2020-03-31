@@ -156,7 +156,7 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 			return &AddressAssignment{}, err
 		}
 		if contains(longTermStatus, aa.Status) {
-			err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ?", longTermStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate), UpdatedAt: time.Now()}).Error
+			err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ? AND end_date IS NULL", longTermStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate), UpdatedAt: time.Now()}).Error
 		}
 	}
 	return aa, nil
@@ -166,7 +166,7 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 func (aa *AddressAssignment) UpdateAddressAssignment(db *gorm.DB) (*AddressAssignment, error) {
 
 	var err error
-	err = db.Debug().Model(&AddressAssignment{}).Where("id = ?", aa.ID).Updates(AddressAssignment{Status: aa.Status, StartDate: aa.StartDate, EndDate: aa.EndDate, UpdatedAt: time.Now()}).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("id = ?", aa.ID).Updates(AddressAssignment{Status: aa.Status, StartDate: aa.StartDate, EndDate: null.TimeFrom(aa.EndDate.Time.AddDate(0, 0, -1)), UpdatedAt: time.Now()}).Error
 	if err != nil {
 		return &AddressAssignment{}, err
 	}
@@ -224,7 +224,7 @@ func (aa *AddressAssignment) FindAllActiveAddressesForUser(db *gorm.DB, uid uuid
 	var err error
 	addresses := []AddressAssignment{}
 	today := strings.Split(time.Now().String(), " ")[0]
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status NOT IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", uid, expiredAndDeleted, today, today).Limit(100).Find(&addresses).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status NOT IN (?) AND (end_date IS NULL OR end_date > ?)", uid, expiredAndDeleted, today).Limit(100).Find(&addresses).Error
 	if err != nil {
 		return &[]AddressAssignment{}, err
 	}

@@ -54,11 +54,11 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	uid, err := auth.ExtractTokenID(r)
-	fmt.Printf("token id: %+v", uid)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
+	fmt.Printf("token id: %+v", uid)
 	if uid != addressAssignment.UserID {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
 		return
@@ -72,6 +72,13 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	addressAssignment.User = user
+
+	err = geoLocate(&addressAssignment)
+	if err != nil {
+		_, _ = addressAssignment.User.DeleteUser(server.DB, user.ID)
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
 
 	createAddress, err := addressAssignment.Address.SaveAddress(server.DB)
 	if err != nil {
@@ -147,23 +154,12 @@ func (server *Server) CreateUserAndAddress(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	geoCodeaddress := strings.ReplaceAll(addressAssignment.Address.LineOne+" "+addressAssignment.Address.City+" "+addressAssignment.Address.State+" "+addressAssignment.Address.ZipCode, " ", "+")
-
-	res, err := http.Get("https://maps.googleapis.com/maps/api/geocode/json?address=" + geoCodeaddress + "&key=AIzaSyARoO29--UJnqVy2U5KcOp9qyrtzNl097c")
+	err = geoLocate(&addressAssignment)
 	if err != nil {
-		panic(err.Error())
+		_, _ = addressAssignment.User.DeleteUser(server.DB, user.ID)
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
 	}
-
-	resBodyody, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		panic(err.Error())
-	}
-	var geoInfo geoInfo
-	json.Unmarshal([]byte(resBodyody), &geoInfo)
-	fmt.Printf("Lat: %+v,   Lng: %+v", geoInfo.Results[0].Geometry.Location.Lat, geoInfo.Results[0].Geometry.Location.Lng)
-
-	addressAssignment.Address.Latitude = geoInfo.Results[0].Geometry.Location.Lat
-	addressAssignment.Address.Longitude = geoInfo.Results[0].Geometry.Location.Lng
 
 	addressAssignment.UserID = user.ID
 
@@ -423,4 +419,26 @@ func (server *Server) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Entity", fmt.Sprintf("%d", aid))
 	responses.JSON(w, http.StatusNoContent, "")
+}
+
+func geoLocate(addressAssignment *models.AddressAssignment) (err error) {
+	geoCodeaddress := strings.ReplaceAll(addressAssignment.Address.LineOne+" "+addressAssignment.Address.City+" "+addressAssignment.Address.State+" "+addressAssignment.Address.ZipCode, " ", "+")
+
+	res, err := http.Get("https://maps.googleapis.com/maps/api/geocode/json?address=" + geoCodeaddress + "&key=AIzaSyARoO29--UJnqVy2U5KcOp9qyrtzNl097c")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	resBodyody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err.Error())
+	}
+	var geoInfo geoInfo
+	json.Unmarshal([]byte(resBodyody), &geoInfo)
+	fmt.Printf("Lat: %+v,   Lng: %+v", geoInfo.Results[0].Geometry.Location.Lat, geoInfo.Results[0].Geometry.Location.Lng)
+
+	addressAssignment.Address.Latitude = geoInfo.Results[0].Geometry.Location.Lat
+	addressAssignment.Address.Longitude = geoInfo.Results[0].Geometry.Location.Lng
+
+	return
 }
