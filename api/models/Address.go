@@ -140,7 +140,7 @@ func (a *Address) UpdateAddress(db *gorm.DB) (*Address, error) {
 // DeleteAddress removes an address from the DB (should never use this unless correcting an accidental addition)
 func (a *Address) DeleteAddress(db *gorm.DB, aid uint64) (int64, error) {
 
-	db = db.Debug().Model(&Address{}).Where("id = ?", aid).Take(&Address{}).Delete(&Address{})
+	db = db.Debug().Model(&Address{}).Where("id = ?", aid).Delete(&Address{})
 
 	if db.Error != nil {
 		if gorm.IsRecordNotFoundError(db.Error) {
