@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql/driver"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -134,12 +135,12 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 	var err error
 	if contains(temporaryStatus, aa.Status) {
 		conflictingAddresses := []AddressAssignment{}
-		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN ('temporary', ?) AND ((start_date <= ? AND start_date >= ?) OR (end_date >= ? AND end_date <= ?))", aa.UserID, aa.Status, aa.EndDate, aa.StartDate, aa.StartDate, aa.EndDate).Limit(100).Find(&conflictingAddresses).Error
+		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN ('temporary', ?) AND ((start_date <= ? AND start_date >= ?) OR (end_date >= ? AND end_date <= ?))", aa.UserID, aa.Status, aa.EndDate, aa.StartDate, aa.StartDate, aa.EndDate).Limit(1).Find(&conflictingAddresses).Error
 		if err != nil {
 			return &AddressAssignment{}, err
 		}
 		if len(conflictingAddresses) > 0 {
-			return &AddressAssignment{}, errors.New("There is aonflict with another temporary address change - please make sure that the dates for temporary addresses don't overlap")
+			return &AddressAssignment{}, errors.New("There is a conflict with another temporary address change - please make sure that the dates for temporary addresses don't overlap")
 		}
 	}
 	err = db.Debug().Model(&AddressAssignment{}).Create(&aa).Error
@@ -156,7 +157,7 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 			return &AddressAssignment{}, err
 		}
 		if contains(longTermStatus, aa.Status) {
-			err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ? AND end_date IS NULL", longTermStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate), UpdatedAt: time.Now()}).Error
+			err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ? AND end_date IS NULL", longTermStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate.AddDate(0, 0, -1)), UpdatedAt: time.Now()}).Error
 		}
 	}
 	return aa, nil
@@ -166,7 +167,7 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 func (aa *AddressAssignment) UpdateAddressAssignment(db *gorm.DB) (*AddressAssignment, error) {
 
 	var err error
-	err = db.Debug().Model(&AddressAssignment{}).Where("id = ?", aa.ID).Updates(AddressAssignment{Status: aa.Status, StartDate: aa.StartDate, EndDate: null.TimeFrom(aa.EndDate.Time.AddDate(0, 0, -1)), UpdatedAt: time.Now()}).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("id = ?", aa.ID).Updates(AddressAssignment{Status: aa.Status, StartDate: aa.StartDate, EndDate: aa.EndDate, UpdatedAt: time.Now()}).Error
 	if err != nil {
 		return &AddressAssignment{}, err
 	}
@@ -264,6 +265,40 @@ func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uuid.UUID)
 		}
 	}
 	return &addresses, nil
+}
+
+// DeleteAddress removes an address assignment from the DB (should never use this unless correcting an accidental addition)
+func (aa *AddressAssignment) DeleteAddress(db *gorm.DB, aaid uint64) error {
+
+	err := db.Debug().Model(&AddressAssignment{}).Where("id = ?", aa.ID).Updates(AddressAssignment{Status: Deleted, UpdatedAt: time.Now()}).Error
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return errors.New("Address not found")
+		}
+		return err
+	}
+
+	if aa.Status == LongTerm {
+		priorAddress := AddressAssignment{}
+		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status = ? AND end_date = ?", aa.UserID, LongTerm, aa.StartDate.AddDate(0, 0, -1)).Find(&priorAddress).Error
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				return errors.New("Could not find previous address")
+			}
+			return err
+		}
+		fmt.Printf("priorAddress.EndDate:  %+v\naa.EndDate:  %+v", priorAddress.EndDate, aa.EndDate)
+		err = db.Debug().Model(&AddressAssignment{}).Where("id = ?", priorAddress.ID).Updates(AddressAssignment{EndDate: aa.EndDate, UpdatedAt: time.Now()}).Error
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				return errors.New("Address not found")
+			}
+			return err
+		}
+
+	}
+
+	return nil
 }
 
 // DeleteAddressAssignment removes an address assignment from the DB (should never use this unless correcting an accidental addition)

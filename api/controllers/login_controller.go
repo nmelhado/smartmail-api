@@ -11,6 +11,7 @@ import (
 	"github.com/nmelhado/smartmail-api/api/models"
 	"github.com/nmelhado/smartmail-api/api/responses"
 	"github.com/nmelhado/smartmail-api/api/utils/formaterror"
+	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -74,6 +75,20 @@ func (server *Server) SignIn(email, password string) (string, models.User, error
 	}
 	token, err := auth.CreateToken(user.ID)
 	return token, user, err
+}
+
+// RetrieveAllAddresses retrieves all non deleted addresses for a user
+func (server *Server) RetrieveAllAddresses(userID uuid.UUID) (finalAddresses []responses.BasicAddress, err error) {
+	addressAssignment := models.AddressAssignment{}
+
+	addresses, err := addressAssignment.FindAllActiveAddressesForUser(server.DB, userID)
+	if err != nil {
+		return
+	}
+
+	finalAddresses = responses.TranslateAddresses(addresses)
+
+	return
 }
 
 // RetrieveAllUserAddresses retrieves all non deleted addresses for a user

@@ -400,7 +400,7 @@ func (server *Server) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 
 	// Check if the address exist
 	addressAssignment := models.AddressAssignment{}
-	err = server.DB.Debug().Model(models.Address{}).Where("address_id = ?", aid).Take(&addressAssignment).Error
+	err = server.DB.Debug().Model(models.Address{}).Where("id = ?", aid).Take(&addressAssignment).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusNotFound, errors.New("Unauthorized"))
 		return
@@ -412,13 +412,23 @@ func (server *Server) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = addressAssignment.Address.DeleteAddress(server.DB, aid)
+	err = addressAssignment.DeleteAddress(server.DB, aid)
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 		return
 	}
-	w.Header().Set("Entity", fmt.Sprintf("%d", aid))
-	responses.JSON(w, http.StatusNoContent, "")
+
+	addresses, err := server.RetrieveAllAddresses(uid)
+	if err != nil {
+		formattedError := formaterror.FormatError(err.Error())
+		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
+		return
+	}
+
+	response := responses.AddressesResponse{
+		Addresses: addresses,
+	}
+	responses.JSON(w, http.StatusOK, response)
 }
 
 func geoLocate(addressAssignment *models.AddressAssignment) (err error) {

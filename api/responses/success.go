@@ -27,8 +27,14 @@ type UserAndAddressResponse struct {
 	Expires   time.Time          `json:"expires"`
 }
 
+// AddressesResponse is the struct returned when a new user and address are simultaneously created
+type AddressesResponse struct {
+	Addresses []BasicAddress `json:"addresses"`
+}
+
 // BasicAddress is used to return an address to the UI
 type BasicAddress struct {
+	ID           uint64        `json:"id"`
 	Nickname     null.String   `json:"nickname"`
 	Status       models.Status `json:"address_type"`
 	StartDate    time.Time     `json:"start_date"`
@@ -138,6 +144,7 @@ func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, 
 	reply.User.CreatedAt = originalAddress.User.CreatedAt
 
 	replyAddress := BasicAddress{
+		ID:           originalAddress.ID,
 		Nickname:     originalAddress.Address.Nickname,
 		Status:       originalAddress.Status,
 		StartDate:    originalAddress.StartDate,
@@ -166,6 +173,7 @@ func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, 
 // TranslateAddress converts a single AddressAssignment into a BasicAddresses
 func TranslateAddress(originalAddress *models.AddressAssignment) (address BasicAddress) {
 	address = BasicAddress{
+		ID:           originalAddress.ID,
 		Nickname:     originalAddress.Address.Nickname,
 		Status:       originalAddress.Status,
 		StartDate:    originalAddress.StartDate,
