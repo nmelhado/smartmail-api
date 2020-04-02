@@ -451,25 +451,3 @@ func geoLocate(addressAssignment *models.AddressAssignment) (err error) {
 
 	return
 }
-
-func geoLocate(addressAssignment *models.AddressAssignment) (err error) {
-	geoCodeaddress := strings.ReplaceAll(addressAssignment.Address.LineOne+" "+addressAssignment.Address.City+" "+addressAssignment.Address.State+" "+addressAssignment.Address.ZipCode, " ", "+")
-
-	res, err := http.Get("https://maps.googleapis.com/maps/api/geocode/json?address=" + geoCodeaddress + "&key=AIzaSyARoO29--UJnqVy2U5KcOp9qyrtzNl097c")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	resBodyody, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		panic(err.Error())
-	}
-	var geoInfo geoInfo
-	json.Unmarshal([]byte(resBodyody), &geoInfo)
-	fmt.Printf("Lat: %+v,   Lng: %+v", geoInfo.Results[0].Geometry.Location.Lat, geoInfo.Results[0].Geometry.Location.Lng)
-
-	addressAssignment.Address.Latitude = geoInfo.Results[0].Geometry.Location.Lat
-	addressAssignment.Address.Longitude = geoInfo.Results[0].Geometry.Location.Lng
-
-	return
-}
