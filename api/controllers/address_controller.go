@@ -58,7 +58,7 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
-	fmt.Printf("token id: %+v", uid)
+	fmt.Printf("user id: %+v", uid)
 	if uid != addressAssignment.UserID {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
 		return
@@ -400,7 +400,7 @@ func (server *Server) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 
 	// Check if the address exist
 	addressAssignment := models.AddressAssignment{}
-	err = server.DB.Debug().Model(models.Address{}).Where("address_id = ?", aid).Take(&addressAssignment).Error
+	err = server.DB.Debug().Model(models.Address{}).Where("id = ?", aid).Take(&addressAssignment).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusNotFound, errors.New("Unauthorized"))
 		return
@@ -412,13 +412,44 @@ func (server *Server) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = addressAssignment.Address.DeleteAddress(server.DB, aid)
+	err = addressAssignment.DeleteAddress(server.DB, aid)
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 		return
 	}
-	w.Header().Set("Entity", fmt.Sprintf("%d", aid))
-	responses.JSON(w, http.StatusNoContent, "")
+
+	addresses, err := server.RetrieveAllAddresses(uid)
+	if err != nil {
+		formattedError := formaterror.FormatError(err.Error())
+		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
+		return
+	}
+
+	response := responses.AddressesResponse{
+		Addresses: addresses,
+	}
+	responses.JSON(w, http.StatusOK, response)
+}
+
+func geoLocate(addressAssignment *models.AddressAssignment) (err error) {
+	geoCodeaddress := strings.ReplaceAll(addressAssignment.Address.LineOne+" "+addressAssignment.Address.City+" "+addressAssignment.Address.State+" "+addressAssignment.Address.ZipCode, " ", "+")
+
+	res, err := http.Get("https://maps.googleapis.com/maps/api/geocode/json?address=" + geoCodeaddress + "&key=AIzaSyARoO29--UJnqVy2U5KcOp9qyrtzNl097c")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	resBodyody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err.Error())
+	}
+	var geoInfo geoInfo
+	json.Unmarshal([]byte(resBodyody), &geoInfo)
+
+	addressAssignment.Address.Latitude = geoInfo.Results[0].Geometry.Location.Lat
+	addressAssignment.Address.Longitude = geoInfo.Results[0].Geometry.Location.Lng
+
+	return
 }
 
 func geoLocate(addressAssignment *models.AddressAssignment) (err error) {
