@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql/driver"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -287,13 +286,23 @@ func (aa *AddressAssignment) DeleteAddress(db *gorm.DB, aaid uint64) error {
 			}
 			return err
 		}
-		fmt.Printf("priorAddress.EndDate:  %+v\naa.EndDate:  %+v", priorAddress.EndDate, aa.EndDate)
-		err = db.Debug().Model(&AddressAssignment{}).Where("id = ?", priorAddress.ID).Updates(AddressAssignment{EndDate: aa.EndDate, UpdatedAt: time.Now()}).Error
-		if err != nil {
-			if gorm.IsRecordNotFoundError(err) {
-				return errors.New("Address not found")
+		newEndDate := aa.EndDate
+		if newEndDate.Valid {
+			err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND id = ?", aa.UserID, priorAddress.ID).Updates(AddressAssignment{EndDate: newEndDate, UpdatedAt: time.Now()}).Error
+			if err != nil {
+				if gorm.IsRecordNotFoundError(err) {
+					return errors.New("Address not found")
+				}
+				return db.Error
 			}
-			return err
+		} else {
+			err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND id = ?", aa.UserID, priorAddress.ID).Updates(map[string]interface{}{"end_date": nil, "updated_at": time.Now()}).Error
+			if err != nil {
+				if gorm.IsRecordNotFoundError(err) {
+					return errors.New("Address not found")
+				}
+				return db.Error
+			}
 		}
 
 	}

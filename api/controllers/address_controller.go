@@ -58,7 +58,7 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
-	fmt.Printf("token id: %+v", uid)
+	fmt.Printf("user id: %+v", uid)
 	if uid != addressAssignment.UserID {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
 		return
@@ -445,7 +445,6 @@ func geoLocate(addressAssignment *models.AddressAssignment) (err error) {
 	}
 	var geoInfo geoInfo
 	json.Unmarshal([]byte(resBodyody), &geoInfo)
-	fmt.Printf("Lat: %+v,   Lng: %+v", geoInfo.Results[0].Geometry.Location.Lat, geoInfo.Results[0].Geometry.Location.Lng)
 
 	addressAssignment.Address.Latitude = geoInfo.Results[0].Geometry.Location.Lat
 	addressAssignment.Address.Longitude = geoInfo.Results[0].Geometry.Location.Lng
