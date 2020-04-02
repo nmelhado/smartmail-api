@@ -33,17 +33,17 @@ type Address struct {
 // Prepare escapes html, trims strings, and sets created and updated times for the various Address fields
 func (a *Address) Prepare() {
 	a.ID = 0
-	a.Nickname.String = html.EscapeString(strings.TrimSpace(a.Nickname.String))
-	a.LineOne = html.EscapeString(strings.TrimSpace(a.LineOne))
-	a.LineTwo.String = html.EscapeString(strings.TrimSpace(a.LineTwo.String))
-	a.UnitNumber.String = html.EscapeString(strings.TrimSpace(a.UnitNumber.String))
-	a.BusinessName.String = html.EscapeString(strings.TrimSpace(a.BusinessName.String))
-	a.AttentionTo.String = html.EscapeString(strings.TrimSpace(a.AttentionTo.String))
-	a.City = html.EscapeString(strings.TrimSpace(a.City))
-	a.State = html.EscapeString(strings.TrimSpace(a.State))
-	a.ZipCode = html.EscapeString(strings.TrimSpace(a.ZipCode))
-	a.Country = html.EscapeString(strings.TrimSpace(a.Country))
-	a.Phone.String = html.EscapeString(strings.TrimSpace(a.Phone.String))
+	a.Nickname.String = html.UnescapeString(strings.TrimSpace(a.Nickname.String))
+	a.LineOne = html.UnescapeString(strings.TrimSpace(a.LineOne))
+	a.LineTwo.String = html.UnescapeString(strings.TrimSpace(a.LineTwo.String))
+	a.UnitNumber.String = html.UnescapeString(strings.TrimSpace(a.UnitNumber.String))
+	a.BusinessName.String = html.UnescapeString(strings.TrimSpace(a.BusinessName.String))
+	a.AttentionTo.String = html.UnescapeString(strings.TrimSpace(a.AttentionTo.String))
+	a.City = html.UnescapeString(strings.TrimSpace(a.City))
+	a.State = html.UnescapeString(strings.TrimSpace(a.State))
+	a.ZipCode = html.UnescapeString(strings.TrimSpace(a.ZipCode))
+	a.Country = html.UnescapeString(strings.TrimSpace(a.Country))
+	a.Phone.String = html.UnescapeString(strings.TrimSpace(a.Phone.String))
 	a.CreatedAt = time.Now()
 	a.UpdatedAt = time.Now()
 }
