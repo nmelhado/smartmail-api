@@ -166,7 +166,7 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 func (aa *AddressAssignment) UpdateAddressAssignment(db *gorm.DB) (*AddressAssignment, error) {
 
 	var err error
-	err = db.Debug().Model(&AddressAssignment{}).Where("id = ?", aa.ID).Updates(AddressAssignment{Status: aa.Status, StartDate: aa.StartDate, EndDate: aa.EndDate, UpdatedAt: time.Now()}).Error
+	err = db.Debug().Model(&AddressAssignment{}).Where("id = ?", aa.ID).Updates(AddressAssignment{Status: aa.Status, StartDate: aa.StartDate, EndDate: null.TimeFrom(aa.EndDate.Time.AddDate(0, 0, -1)), UpdatedAt: time.Now()}).Error
 	if err != nil {
 		return &AddressAssignment{}, err
 	}
