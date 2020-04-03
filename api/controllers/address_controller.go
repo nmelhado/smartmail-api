@@ -319,7 +319,7 @@ func (server *Server) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	// Check if the address id is valid
-	aid, err := strconv.ParseUint(vars["id"], 10, 64)
+	aaid, err := strconv.ParseUint(vars["id"], 10, 64)
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 		return
@@ -334,11 +334,14 @@ func (server *Server) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 
 	// Check if the address assignment exist
 	addressAssignment := models.AddressAssignment{}
-	err = server.DB.Debug().Model(models.AddressAssignment{}).Where("address_id = ?", aid).Take(&addressAssignment).Error
+	err = server.DB.Debug().Model(models.AddressAssignment{}).Where("id = ?", aaid).Take(&addressAssignment).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusNotFound, errors.New("Address not found"))
 		return
 	}
+
+	aid := addressAssignment.AddressID
+	originalStart := addressAssignment.StartDate
 
 	// If a user attempt to update a address not belonging to him
 	if uid != addressAssignment.UserID {
@@ -352,31 +355,37 @@ func (server *Server) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Start processing the request data
-	addressUpdate := models.Address{}
-	err = json.Unmarshal(body, &addressUpdate)
+	err = json.Unmarshal(body, &addressAssignment)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	addressUpdate.Prepare()
-	err = addressUpdate.Validate()
-	if err != nil {
-		responses.ERROR(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-
-	addressUpdate.ID = aid //this is important to tell the model the address id to update, the other update field are set above
-
-	addressUpdated, err := addressUpdate.UpdateAddress(server.DB)
-
+	err = addressAssignment.Address.Update(server.DB, aid)
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
 		responses.ERROR(w, http.StatusInternalServerError, formattedError)
 		return
 	}
-	responses.JSON(w, http.StatusOK, addressUpdated)
+
+	err = addressAssignment.UpdateAddress(server.DB, aaid, originalStart)
+	if err != nil {
+		formattedError := formaterror.FormatError(err.Error())
+		responses.ERROR(w, http.StatusInternalServerError, formattedError)
+		return
+	}
+
+	addresses, err := server.RetrieveAllAddresses(uid)
+	if err != nil {
+		formattedError := formaterror.FormatError(err.Error())
+		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
+		return
+	}
+
+	response := responses.AddressesResponse{
+		Addresses: addresses,
+	}
+	responses.JSON(w, http.StatusOK, response)
 }
 
 // DeleteAddress removes an address from the DB (not typically used)

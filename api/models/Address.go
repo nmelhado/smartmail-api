@@ -111,11 +111,11 @@ func (a *Address) FindAddressByID(db *gorm.DB, aid uint64) (*Address, error) {
 	return a, nil
 }
 
-// UpdateAddress updates the values of an address (this is for correcting an address, NOT updating a user's current address)
-func (a *Address) UpdateAddress(db *gorm.DB) (*Address, error) {
+// Update updates the values of an address (this is for correcting an address, NOT updating a user's current address)
+func (a *Address) Update(db *gorm.DB, aid uint64) error {
 	var err error
 
-	err = db.Debug().Model(&Address{}).Where("id = ?", a.ID).Updates(
+	err = db.Debug().Model(&Address{}).Where("id = ?", aid).Updates(
 		Address{
 			Nickname:     a.Nickname,
 			LineOne:      a.LineOne,
@@ -132,9 +132,9 @@ func (a *Address) UpdateAddress(db *gorm.DB) (*Address, error) {
 			Longitude:    a.Longitude,
 			UpdatedAt:    time.Now()}).Error
 	if err != nil {
-		return &Address{}, err
+		return err
 	}
-	return a, nil
+	return nil
 }
 
 // DeleteAddress removes an address from the DB (should never use this unless correcting an accidental addition)

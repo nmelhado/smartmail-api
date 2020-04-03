@@ -162,6 +162,39 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 	return aa, nil
 }
 
+// UpdateAddress removes an address assignment from the DB (should never use this unless correcting an accidental addition)
+func (aa *AddressAssignment) UpdateAddress(db *gorm.DB, aaid uint64, originalStart time.Time) error {
+
+	err := db.Debug().Model(&AddressAssignment{}).Where("id = ?", aa.ID).Updates(AddressAssignment{StartDate: aa.StartDate, EndDate: aa.EndDate, UpdatedAt: time.Now()}).Error
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return errors.New("Address not found")
+		}
+		return err
+	}
+
+	if aa.Status == LongTerm && !aa.EndDate.Valid && aa.StartDate != originalStart {
+		priorAddress := AddressAssignment{}
+		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status = ? AND end_date = ?", aa.UserID, LongTerm, originalStart.AddDate(0, 0, -1)).Find(&priorAddress).Error
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				return errors.New("Could not find previous address")
+			}
+			return err
+		}
+		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND id = ?", aa.UserID, priorAddress.ID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate.AddDate(0, 0, -1)), UpdatedAt: time.Now()}).Error
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				return errors.New("Address not found")
+			}
+			return db.Error
+		}
+
+	}
+
+	return nil
+}
+
 // UpdateAddressAssignment is used to update status as well as start and end dates.
 func (aa *AddressAssignment) UpdateAddressAssignment(db *gorm.DB) (*AddressAssignment, error) {
 
