@@ -268,6 +268,7 @@ func (server *Server) GetMailingAddressBySmartID(w http.ResponseWriter, r *http.
 
 	addressResponse := &responses.AddressSmartIDResponse{}
 	responses.TranslateSmartAddressResponse(addressReceived, addressResponse)
+	addressResponse.DeliveryInstructions = ""
 
 	responses.JSON(w, http.StatusOK, addressResponse)
 }

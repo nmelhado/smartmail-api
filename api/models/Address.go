@@ -12,22 +12,23 @@ import (
 
 // Address is the sql and and json model for an address
 type Address struct {
-	ID           uint64      `gorm:"primary_key;auto_increment" json:"id"`
-	Nickname     null.String `gorm:"size:255;" json:"nickname"`
-	LineOne      string      `gorm:"size:255;not null;" json:"line_one"`
-	LineTwo      null.String `gorm:"size:255;" json:"line_two"`
-	UnitNumber   null.String `gorm:"size:255;" json:"unit_number"`
-	BusinessName null.String `gorm:"size:255;" json:"business_name"`
-	AttentionTo  null.String `gorm:"size:255;" json:"attention_to"`
-	City         string      `gorm:"size:255;not null;" json:"city"`
-	State        string      `gorm:"size:255;not null;" json:"state"`
-	ZipCode      string      `gorm:"size:255;not null;" json:"zip_code"`
-	Country      string      `gorm:"size:255;not null;" json:"country"`
-	Phone        null.String `gorm:"size:255;" json:"phone"`
-	Latitude     float64     `json:"latitude"`
-	Longitude    float64     `json:"longitude"`
-	CreatedAt    time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt    time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID                   uint64      `gorm:"primary_key;auto_increment" json:"id"`
+	Nickname             null.String `gorm:"size:255;" json:"nickname"`
+	LineOne              string      `gorm:"size:255;not null;" json:"line_one"`
+	LineTwo              null.String `gorm:"size:255;" json:"line_two"`
+	UnitNumber           null.String `gorm:"size:255;" json:"unit_number"`
+	BusinessName         null.String `gorm:"size:255;" json:"business_name"`
+	AttentionTo          null.String `gorm:"size:255;" json:"attention_to"`
+	City                 string      `gorm:"size:255;not null;" json:"city"`
+	State                string      `gorm:"size:255;not null;" json:"state"`
+	ZipCode              string      `gorm:"size:255;not null;" json:"zip_code"`
+	Country              string      `gorm:"size:255;not null;" json:"country"`
+	Phone                null.String `gorm:"size:255;" json:"phone"`
+	Latitude             float64     `json:"latitude"`
+	Longitude            float64     `json:"longitude"`
+	DeliveryInstructions null.String `gorm:"size:255;" json:"delivery_instructions"`
+	CreatedAt            time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt            time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 // Prepare escapes html, trims strings, and sets created and updated times for the various Address fields
@@ -44,6 +45,7 @@ func (a *Address) Prepare() {
 	a.ZipCode = html.UnescapeString(strings.TrimSpace(a.ZipCode))
 	a.Country = html.UnescapeString(strings.TrimSpace(a.Country))
 	a.Phone.String = html.UnescapeString(strings.TrimSpace(a.Phone.String))
+	a.DeliveryInstructions.String = html.UnescapeString(strings.TrimSpace(a.DeliveryInstructions.String))
 	a.CreatedAt = time.Now()
 	a.UpdatedAt = time.Now()
 }
@@ -117,20 +119,21 @@ func (a *Address) Update(db *gorm.DB, aid uint64) error {
 
 	err = db.Debug().Model(&Address{}).Where("id = ?", aid).Updates(
 		Address{
-			Nickname:     a.Nickname,
-			LineOne:      a.LineOne,
-			LineTwo:      a.LineTwo,
-			UnitNumber:   a.UnitNumber,
-			BusinessName: a.BusinessName,
-			AttentionTo:  a.AttentionTo,
-			City:         a.City,
-			State:        a.State,
-			ZipCode:      a.ZipCode,
-			Country:      a.Country,
-			Phone:        a.Phone,
-			Latitude:     a.Latitude,
-			Longitude:    a.Longitude,
-			UpdatedAt:    time.Now()}).Error
+			Nickname:             a.Nickname,
+			LineOne:              a.LineOne,
+			LineTwo:              a.LineTwo,
+			UnitNumber:           a.UnitNumber,
+			BusinessName:         a.BusinessName,
+			AttentionTo:          a.AttentionTo,
+			City:                 a.City,
+			State:                a.State,
+			ZipCode:              a.ZipCode,
+			Country:              a.Country,
+			Phone:                a.Phone,
+			Latitude:             a.Latitude,
+			Longitude:            a.Longitude,
+			DeliveryInstructions: a.DeliveryInstructions,
+			UpdatedAt:            time.Now()}).Error
 	if err != nil {
 		return err
 	}

@@ -145,7 +145,7 @@ func seedTables() ([]models.User, []models.Address, []models.AddressAssignment, 
 	endDateOne, _ := time.Parse("2006-01-02", "2020-07-01")
 	var addressesAssignments = []models.AddressAssignment{
 		models.AddressAssignment{
-			Status:    models.LongTerm,
+			Status:    models.Permanent,
 			StartDate: startDateOne,
 		},
 		models.AddressAssignment{
@@ -154,11 +154,11 @@ func seedTables() ([]models.User, []models.Address, []models.AddressAssignment, 
 			EndDate:   null.TimeFrom(endDateOne),
 		},
 		models.AddressAssignment{
-			Status:    models.LongTerm,
+			Status:    models.Permanent,
 			StartDate: startDateOne,
 		},
 		models.AddressAssignment{
-			Status:    models.LongTerm,
+			Status:    models.Permanent,
 			StartDate: startDateOne,
 		},
 	}
