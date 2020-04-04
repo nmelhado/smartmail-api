@@ -18,22 +18,22 @@ type Status string
 /*
 postgres command to create enum:
 CREATE TYPE status AS ENUM (
-	'long_term',
+	'permanent',
 	'temporary',
-	'package_only_long_term',
+	'package_only_permanent',
 	'package_only_temporary',
-	'mail_only_long_term',
+	'mail_only_permanent',
 	'mail_only_temporary',
 	'expired',
 	'deleted');
 */
 
 const (
-	LongTerm             Status = "long_term"
+	Permanent            Status = "permanent"
 	Temporary            Status = "temporary"
-	PackageOnlyLongTerm  Status = "package_only_long_term"
+	PackageOnlyPermanent Status = "package_only_permanent"
 	PackageOnlyTemporary Status = "package_only_temporary"
-	MailOnlyLongTerm     Status = "mail_only_long_term"
+	MailOnlyPermanent    Status = "mail_only_permanent"
 	MailOnlyTemporary    Status = "mail_only_temporary"
 	Expired              Status = "expired"
 	Deleted              Status = "deleted"
@@ -65,16 +65,16 @@ type AddressAssignment struct {
 }
 
 var validPackageStatus []Status = []Status{
-	LongTerm,
+	Permanent,
 	Temporary,
-	PackageOnlyLongTerm,
+	PackageOnlyPermanent,
 	PackageOnlyTemporary,
 }
 
 var validMailStatus []Status = []Status{
-	LongTerm,
+	Permanent,
 	Temporary,
-	MailOnlyLongTerm,
+	MailOnlyPermanent,
 	MailOnlyTemporary,
 }
 
@@ -84,10 +84,10 @@ var temporaryStatus []Status = []Status{
 	MailOnlyTemporary,
 }
 
-var longTermStatus []Status = []Status{
-	LongTerm,
-	MailOnlyLongTerm,
-	PackageOnlyLongTerm,
+var permanentStatus []Status = []Status{
+	Permanent,
+	MailOnlyPermanent,
+	PackageOnlyPermanent,
 }
 
 var expiredAndDeleted []Status = []Status{
@@ -155,11 +155,44 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 		if err != nil {
 			return &AddressAssignment{}, err
 		}
-		if contains(longTermStatus, aa.Status) {
-			err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ? AND end_date IS NULL", longTermStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate.AddDate(0, 0, -1)), UpdatedAt: time.Now()}).Error
+		if contains(permanentStatus, aa.Status) {
+			err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ? AND end_date IS NULL", permanentStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate.AddDate(0, 0, -1)), UpdatedAt: time.Now()}).Error
 		}
 	}
 	return aa, nil
+}
+
+// UpdateAddress removes an address assignment from the DB (should never use this unless correcting an accidental addition)
+func (aa *AddressAssignment) UpdateAddress(db *gorm.DB, aaid uint64, originalStart time.Time) error {
+
+	err := db.Debug().Model(&AddressAssignment{}).Where("id = ?", aa.ID).Updates(AddressAssignment{StartDate: aa.StartDate, EndDate: aa.EndDate, UpdatedAt: time.Now()}).Error
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return errors.New("Address not found")
+		}
+		return err
+	}
+
+	if aa.Status == Permanent && aa.StartDate.Format("2006-01-02") != originalStart.Format("2006-01-02") {
+		priorAddress := AddressAssignment{}
+		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status = ? AND end_date = ?", aa.UserID, Permanent, originalStart.AddDate(0, 0, -1)).Find(&priorAddress).Error
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				return errors.New("Could not find previous address")
+			}
+			return err
+		}
+		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND id = ?", aa.UserID, priorAddress.ID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate.AddDate(0, 0, -1)), UpdatedAt: time.Now()}).Error
+		if err != nil {
+			if gorm.IsRecordNotFoundError(err) {
+				return errors.New("Address not found")
+			}
+			return db.Error
+		}
+
+	}
+
+	return nil
 }
 
 // UpdateAddressAssignment is used to update status as well as start and end dates.
@@ -277,9 +310,9 @@ func (aa *AddressAssignment) DeleteAddress(db *gorm.DB, aaid uint64) error {
 		return err
 	}
 
-	if aa.Status == LongTerm {
+	if aa.Status == Permanent {
 		priorAddress := AddressAssignment{}
-		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status = ? AND end_date = ?", aa.UserID, LongTerm, aa.StartDate.AddDate(0, 0, -1)).Find(&priorAddress).Error
+		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status = ? AND end_date = ?", aa.UserID, Permanent, aa.StartDate.AddDate(0, 0, -1)).Find(&priorAddress).Error
 		if err != nil {
 			if gorm.IsRecordNotFoundError(err) {
 				return errors.New("Could not find previous address")

@@ -34,23 +34,24 @@ type AddressesResponse struct {
 
 // BasicAddress is used to return an address to the UI
 type BasicAddress struct {
-	ID           uint64        `json:"id"`
-	Nickname     null.String   `json:"nickname"`
-	Status       models.Status `json:"address_type"`
-	StartDate    time.Time     `json:"start_date"`
-	EndDate      string        `json:"end_date,omitempty"`
-	BusinessName string        `json:"business_name,omitempty"`
-	AttentionTo  string        `json:"attention_to,omitempty"`
-	LineOne      string        `json:"line_one"`
-	LineTwo      string        `json:"line_two,omitempty"`
-	UnitNumber   string        `json:"unit_number,omitempty"`
-	City         string        `json:"city"`
-	State        string        `json:"state"`
-	ZipCode      string        `json:"zip_code"`
-	Country      string        `json:"country"`
-	Phone        null.String   `json:"phone,omitempty"`
-	Latitude     float64       `json:"latitude"`
-	Longitude    float64       `json:"longitude"`
+	ID                   uint64        `json:"id"`
+	Nickname             null.String   `json:"nickname"`
+	Status               models.Status `json:"address_type"`
+	StartDate            time.Time     `json:"start_date"`
+	EndDate              string        `json:"end_date,omitempty"`
+	BusinessName         string        `json:"business_name,omitempty"`
+	AttentionTo          string        `json:"attention_to,omitempty"`
+	LineOne              string        `json:"line_one"`
+	LineTwo              string        `json:"line_two,omitempty"`
+	UnitNumber           string        `json:"unit_number,omitempty"`
+	City                 string        `json:"city"`
+	State                string        `json:"state"`
+	ZipCode              string        `json:"zip_code"`
+	Country              string        `json:"country"`
+	Phone                null.String   `json:"phone,omitempty"`
+	Latitude             float64       `json:"latitude"`
+	Longitude            float64       `json:"longitude"`
+	DeliveryInstructions string        `json:"delivery_instructions,omitempty"`
 }
 
 // AddressResponse is used for creating, updating, and retrieving a single address
@@ -74,19 +75,20 @@ type AddressResponse struct {
 
 // AddressSmartIDResponse is used for creating, updating, and retrieving a single address
 type AddressSmartIDResponse struct {
-	SmartID      string      `json:"smart_id"`
-	FirstName    string      `json:"first_name"`
-	LastName     string      `json:"last_name"`
-	BusinessName string      `json:"business_name,omitempty"`
-	AttentionTo  string      `json:"attention_to,omitempty"`
-	LineOne      string      `json:"line_one"`
-	LineTwo      string      `json:"line_two,omitempty"`
-	UnitNumber   string      `json:"unit_number,omitempty"`
-	City         string      `json:"city"`
-	State        string      `json:"state"`
-	ZipCode      string      `json:"zip_code"`
-	Country      string      `json:"country"`
-	Phone        null.String `json:"phone,omitempty"`
+	SmartID              string      `json:"smart_id"`
+	FirstName            string      `json:"first_name"`
+	LastName             string      `json:"last_name"`
+	BusinessName         string      `json:"business_name,omitempty"`
+	AttentionTo          string      `json:"attention_to,omitempty"`
+	LineOne              string      `json:"line_one"`
+	LineTwo              string      `json:"line_two,omitempty"`
+	UnitNumber           string      `json:"unit_number,omitempty"`
+	City                 string      `json:"city"`
+	State                string      `json:"state"`
+	ZipCode              string      `json:"zip_code"`
+	Country              string      `json:"country"`
+	Phone                null.String `json:"phone,omitempty"`
+	DeliveryInstructions string      `json:"delivery_instructions,omitempty"`
 }
 
 // TranslateAddressResponse converts an array of AddressAssignments into an array of AddressResponse
@@ -128,9 +130,10 @@ func TranslateSmartAddressResponse(originalAddress *models.AddressAssignment, re
 	reply.ZipCode = originalAddress.Address.ZipCode
 	reply.Country = originalAddress.Address.Country
 	reply.Phone = originalAddress.Address.Phone
-	if !reply.Phone.Valid {
+	if !reply.Phone.Valid || reply.Phone.String == "" {
 		reply.Phone.SetValid(originalAddress.User.Phone)
 	}
+	reply.DeliveryInstructions = originalAddress.Address.DeliveryInstructions.String
 }
 
 // TranslateUserAndAddressResponse converts an AddressAssignment into a UserAndAddressResponse
@@ -144,22 +147,23 @@ func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, 
 	reply.User.CreatedAt = originalAddress.User.CreatedAt
 
 	replyAddress := BasicAddress{
-		ID:           originalAddress.ID,
-		Nickname:     originalAddress.Address.Nickname,
-		Status:       originalAddress.Status,
-		StartDate:    originalAddress.StartDate,
-		BusinessName: originalAddress.Address.BusinessName.String,
-		AttentionTo:  originalAddress.Address.AttentionTo.String,
-		LineOne:      originalAddress.Address.LineOne,
-		LineTwo:      originalAddress.Address.LineTwo.String,
-		UnitNumber:   originalAddress.Address.UnitNumber.String,
-		City:         originalAddress.Address.City,
-		State:        originalAddress.Address.State,
-		ZipCode:      originalAddress.Address.ZipCode,
-		Country:      originalAddress.Address.Country,
-		Phone:        originalAddress.Address.Phone,
-		Latitude:     originalAddress.Address.Latitude,
-		Longitude:    originalAddress.Address.Longitude,
+		ID:                   originalAddress.ID,
+		Nickname:             originalAddress.Address.Nickname,
+		Status:               originalAddress.Status,
+		StartDate:            originalAddress.StartDate,
+		BusinessName:         originalAddress.Address.BusinessName.String,
+		AttentionTo:          originalAddress.Address.AttentionTo.String,
+		LineOne:              originalAddress.Address.LineOne,
+		LineTwo:              originalAddress.Address.LineTwo.String,
+		UnitNumber:           originalAddress.Address.UnitNumber.String,
+		City:                 originalAddress.Address.City,
+		State:                originalAddress.Address.State,
+		ZipCode:              originalAddress.Address.ZipCode,
+		Country:              originalAddress.Address.Country,
+		Phone:                originalAddress.Address.Phone,
+		Latitude:             originalAddress.Address.Latitude,
+		Longitude:            originalAddress.Address.Longitude,
+		DeliveryInstructions: originalAddress.Address.DeliveryInstructions.String,
 	}
 	if originalAddress.EndDate.Valid {
 		replyAddress.EndDate = originalAddress.EndDate.Time.String()
@@ -173,22 +177,23 @@ func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, 
 // TranslateAddress converts a single AddressAssignment into a BasicAddresses
 func TranslateAddress(originalAddress *models.AddressAssignment) (address BasicAddress) {
 	address = BasicAddress{
-		ID:           originalAddress.ID,
-		Nickname:     originalAddress.Address.Nickname,
-		Status:       originalAddress.Status,
-		StartDate:    originalAddress.StartDate,
-		BusinessName: originalAddress.Address.BusinessName.String,
-		AttentionTo:  originalAddress.Address.AttentionTo.String,
-		LineOne:      originalAddress.Address.LineOne,
-		LineTwo:      originalAddress.Address.LineTwo.String,
-		UnitNumber:   originalAddress.Address.UnitNumber.String,
-		City:         originalAddress.Address.City,
-		State:        originalAddress.Address.State,
-		ZipCode:      originalAddress.Address.ZipCode,
-		Country:      originalAddress.Address.Country,
-		Phone:        originalAddress.Address.Phone,
-		Latitude:     originalAddress.Address.Latitude,
-		Longitude:    originalAddress.Address.Longitude,
+		ID:                   originalAddress.ID,
+		Nickname:             originalAddress.Address.Nickname,
+		Status:               originalAddress.Status,
+		StartDate:            originalAddress.StartDate,
+		BusinessName:         originalAddress.Address.BusinessName.String,
+		AttentionTo:          originalAddress.Address.AttentionTo.String,
+		LineOne:              originalAddress.Address.LineOne,
+		LineTwo:              originalAddress.Address.LineTwo.String,
+		UnitNumber:           originalAddress.Address.UnitNumber.String,
+		City:                 originalAddress.Address.City,
+		State:                originalAddress.Address.State,
+		ZipCode:              originalAddress.Address.ZipCode,
+		Country:              originalAddress.Address.Country,
+		Phone:                originalAddress.Address.Phone,
+		Latitude:             originalAddress.Address.Latitude,
+		Longitude:            originalAddress.Address.Longitude,
+		DeliveryInstructions: originalAddress.Address.DeliveryInstructions.String,
 	}
 	if originalAddress.EndDate.Valid {
 		address.EndDate = originalAddress.EndDate.Time.String()
