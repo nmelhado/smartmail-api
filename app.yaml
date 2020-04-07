@@ -1,0 +1,13 @@
+runtime: go112
+# api_version: go1
+env_variables:
+  APP_ENV: "production"
+
+handlers:
+- url: /.*
+  secure: always
+  redirect_http_response_code: 301
+  script: auto
+  
+# - url: /.*
+#   script: _go_app
