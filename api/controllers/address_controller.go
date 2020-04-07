@@ -18,7 +18,8 @@ import (
 )
 
 type geoInfo struct {
-	Results []result `json:"results"`
+	Results      []result `json:"results"`
+	ErrorMessage string   `json:"error_message"`
 }
 
 type result struct {
@@ -444,17 +445,22 @@ func (server *Server) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 func geoLocate(addressAssignment *models.AddressAssignment) (err error) {
 	geoCodeaddress := strings.ReplaceAll(addressAssignment.Address.LineOne+" "+addressAssignment.Address.City+" "+addressAssignment.Address.State+" "+addressAssignment.Address.ZipCode, " ", "+")
 
-	res, err := http.Get("https://maps.googleapis.com/maps/api/geocode/json?address=" + geoCodeaddress + "&key=AIzaSyARoO29--UJnqVy2U5KcOp9qyrtzNl097c")
+	res, err := http.Get("https://maps.googleapis.com/maps/api/geocode/json?address=" + geoCodeaddress + "&key=AIzaSyDCUjuA4aQIrKq8UQDaKnJPyc5cqxkzlPU")
 	if err != nil {
-		panic(err.Error())
+		return
 	}
 
 	resBodyody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		panic(err.Error())
+		return
 	}
 	var geoInfo geoInfo
 	json.Unmarshal([]byte(resBodyody), &geoInfo)
+
+	if len(geoInfo.Results) < 1 {
+		err = fmt.Errorf("GeoLocation Error:  %s", geoInfo.ErrorMessage)
+		return
+	}
 
 	addressAssignment.Address.Latitude = geoInfo.Results[0].Geometry.Location.Lat
 	addressAssignment.Address.Longitude = geoInfo.Results[0].Geometry.Location.Lng
