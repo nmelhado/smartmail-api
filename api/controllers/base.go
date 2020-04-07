@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	"github.com/rs/cors"
 
-	_ "github.com/jinzhu/gorm/dialects/mysql"    //mysql database driver
 	_ "github.com/jinzhu/gorm/dialects/postgres" //postgres database driver
-	_ "github.com/jinzhu/gorm/dialects/sqlite"   // sqlite database driver
 	"github.com/nmelhado/smartmail-api/api/models"
 )
 
@@ -22,11 +21,17 @@ type Server struct {
 }
 
 // Initialize starts the DB connection
-func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, DbName string) {
-
+func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, CloudHost, DbName string) {
 	var err error
+	DBURL := ""
+	if os.Getenv("APP_ENV") == "production" {
+		DBURL = fmt.Sprintf("host=/cloudsql/%s user=%s dbname=%s password=%s", CloudHost, DbUser, DbName, DbPassword)
+		// DBURL = fmt.Sprintf("%s:%s@unix(/cloudsql/%s)/%s", DbUser, DbPassword, CloudHost, DbName)
+	} else {
+		fmt.Printf("env: %+v", os.Environ())
+		DBURL = fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", DbHost, DbPort, DbUser, DbName, DbPassword)
+	}
 
-	DBURL := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", DbHost, DbPort, DbUser, DbName, DbPassword)
 	server.DB, err = gorm.Open(Dbdriver, DBURL)
 	if err != nil {
 		fmt.Printf("Cannot connect to %s database", Dbdriver)

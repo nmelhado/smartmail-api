@@ -1,0 +1,20 @@
+runtime: go112
+# api_version: go1
+env_variables:
+  APP_ENV: "production"
+  API_SECRET: "nyLs0Jco9F9zBe0vDas0jMjzwGog9gSdPbfML7e7"
+  DB_HOST: "127.0.0.1"
+  DB_DRIVER: "postgres"
+  DB_USER: "smartmail"
+  DB_PASSWORD: "4Pp0pCQkal"
+  DB_NAME: "smartmail"
+  PROD_DB_HOST: "smartmail-273418:us-east4:smartmail-db"
+
+handlers:
+- url: /.*
+  secure: always
+  redirect_http_response_code: 301
+  script: auto
+  
+# - url: /.*
+#   script: _go_app
