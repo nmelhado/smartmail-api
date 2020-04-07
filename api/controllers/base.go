@@ -26,9 +26,7 @@ func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, C
 	DBURL := ""
 	if os.Getenv("APP_ENV") == "production" {
 		DBURL = fmt.Sprintf("host=/cloudsql/%s user=%s dbname=%s password=%s", CloudHost, DbUser, DbName, DbPassword)
-		// DBURL = fmt.Sprintf("%s:%s@unix(/cloudsql/%s)/%s", DbUser, DbPassword, CloudHost, DbName)
 	} else {
-		fmt.Printf("env: %+v", os.Environ())
 		DBURL = fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", DbHost, DbPort, DbUser, DbName, DbPassword)
 	}
 
@@ -37,7 +35,7 @@ func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, C
 		fmt.Printf("Cannot connect to %s database", Dbdriver)
 		log.Fatal("This is the error:", err)
 	} else {
-		fmt.Printf("We are connected to the %s database", Dbdriver)
+		fmt.Printf("Connected to the %s database\n", DbName)
 	}
 
 	server.DB.Debug().AutoMigrate(&models.User{}, &models.Address{}, &models.AddressAssignment{}) //database migration
