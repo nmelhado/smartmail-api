@@ -8,6 +8,9 @@ steps:
   - name: 'go'
     path: '/gopath'
 
+- name: gcr.io/cloud-builders/gsutil
+  args: ['cp', 'gs://smartmail/secrets/.env', '.env']
+
 - name: "gcr.io/cloud-builders/gcloud"
   args: ['app', 'deploy']
   env: ['GOPATH=/gopath']
