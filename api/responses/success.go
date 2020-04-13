@@ -73,6 +73,12 @@ type AddressResponse struct {
 	Phone        null.String   `json:"phone,omitempty"`
 }
 
+// ToAndFromAddressSmartIDResponse is used to return sender and recipeint addresses to a mailer
+type ToAndFromAddressSmartIDResponse struct {
+	Sender    AddressSmartIDResponse `json:"sender"`
+	Recipient AddressSmartIDResponse `json:"recipient"`
+}
+
 // AddressSmartIDResponse is used for creating, updating, and retrieving a single address
 type AddressSmartIDResponse struct {
 	SmartID              string      `json:"smart_id"`
@@ -113,6 +119,12 @@ func TranslateAddressResponse(originalAddress *models.AddressAssignment, reply *
 	if !reply.Phone.Valid {
 		reply.Phone.SetValid(originalAddress.User.Phone)
 	}
+}
+
+// TranslateToAndFromSmartAddressResponse converts sender and recipient AddressAssignments into a ToAndFromAddressSmartIDResponse
+func TranslateToAndFromSmartAddressResponse(senderAddress *models.AddressAssignment, recipientAddress *models.AddressAssignment, reply *ToAndFromAddressSmartIDResponse) {
+	TranslateSmartAddressResponse(senderAddress, &reply.Sender)
+	TranslateSmartAddressResponse(recipientAddress, &reply.Recipient)
 }
 
 // TranslateSmartAddressResponse converts an array of AddressAssignments into an array of AddressSmartIDResponse

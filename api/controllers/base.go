@@ -35,10 +35,14 @@ func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, C
 		fmt.Printf("Cannot connect to %s database", Dbdriver)
 		log.Fatal("This is the error:", err)
 	} else {
-		fmt.Printf("Connected to the %s database\n", DbName)
+		connectType := "dev"
+		if os.Getenv("APP_ENV") == "production" {
+			connectType = "prod"
+		}
+		fmt.Printf("Connected to the %s database\n", connectType)
 	}
 
-	server.DB.Debug().AutoMigrate(&models.User{}, &models.Address{}, &models.AddressAssignment{}) //database migration
+	server.DB.Debug().AutoMigrate(&models.User{}, &models.Address{}, &models.AddressAssignment{}, &models.Contact{}) //database migration
 
 	server.Router = mux.NewRouter()
 

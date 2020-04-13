@@ -231,6 +231,77 @@ func (server *Server) GetAddressByID(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, addressReceived)
 }
 
+// GetMailingAddressToAndFromBySmartID retrieves a user's mailing adress using a customer's SmartID
+func (server *Server) GetMailingAddressToAndFromBySmartID(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	senderSmartID := vars["sender_smart_id"]
+	recipientSmartID := vars["recipient_smart_id"]
+	date, err := time.Parse("2006-01-02", vars["date"])
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+
+	sender := models.User{}
+	recipient := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(senderSmartID)).Take(&sender).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, fmt.Errorf("Unable to find user with smartID: %s", strings.ToUpper(senderSmartID)))
+		return
+	}
+
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(recipientSmartID)).Take(&recipient).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, fmt.Errorf("Unable to find user with smartID: %s", strings.ToUpper(recipientSmartID)))
+		return
+	}
+
+	reqUID, err := auth.ExtractTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+	reqUser := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+
+	if reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
+		fmt.Print(reqUser.Authority)
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	senderAddress := models.AddressAssignment{}
+	senderAddressReceived, err := senderAddress.FindMailingAddressWithSmartID(server.DB, sender, date)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	recipientAddress := models.AddressAssignment{}
+	recipientAddressReceived, err := recipientAddress.FindMailingAddressWithSmartID(server.DB, recipient, date)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	contacts := models.Contact{}
+	err = contacts.SaveContacts(server.DB, sender.ID, recipient.ID)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	addressResponse := &responses.ToAndFromAddressSmartIDResponse{}
+	responses.TranslateToAndFromSmartAddressResponse(senderAddressReceived, recipientAddressReceived, addressResponse)
+	addressResponse.Sender.DeliveryInstructions = ""
+	addressResponse.Recipient.DeliveryInstructions = ""
+
+	responses.JSON(w, http.StatusOK, addressResponse)
+}
+
 // GetMailingAddressBySmartID retrieves a user's mailing adress using a customer's SmartID
 func (server *Server) GetMailingAddressBySmartID(w http.ResponseWriter, r *http.Request) {
 
@@ -270,6 +341,75 @@ func (server *Server) GetMailingAddressBySmartID(w http.ResponseWriter, r *http.
 	addressResponse := &responses.AddressSmartIDResponse{}
 	responses.TranslateSmartAddressResponse(addressReceived, addressResponse)
 	addressResponse.DeliveryInstructions = ""
+
+	responses.JSON(w, http.StatusOK, addressResponse)
+}
+
+// GetPackageAddressToAndFromBySmartID retrieves a user's mailing adress using a customer's SmartID
+func (server *Server) GetPackageAddressToAndFromBySmartID(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	senderSmartID := vars["sender_smart_id"]
+	recipientSmartID := vars["recipient_smart_id"]
+	date, err := time.Parse("2006-01-02", vars["date"])
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+
+	sender := models.User{}
+	recipient := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(senderSmartID)).Take(&sender).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, fmt.Errorf("Unable to find user with smartID: %s", strings.ToUpper(senderSmartID)))
+		return
+	}
+
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(recipientSmartID)).Take(&recipient).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, fmt.Errorf("Unable to find user with smartID: %s", strings.ToUpper(recipientSmartID)))
+		return
+	}
+
+	reqUID, err := auth.ExtractTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+	reqUser := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+
+	if reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
+		fmt.Print(reqUser.Authority)
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	senderAddress := models.AddressAssignment{}
+	senderAddressReceived, err := senderAddress.FindPackageAddressWithSmartID(server.DB, sender, date)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	recipientAddress := models.AddressAssignment{}
+	recipientAddressReceived, err := recipientAddress.FindPackageAddressWithSmartID(server.DB, recipient, date)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	contacts := models.Contact{}
+	err = contacts.SaveContacts(server.DB, sender.ID, recipient.ID)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	addressResponse := &responses.ToAndFromAddressSmartIDResponse{}
+	responses.TranslateToAndFromSmartAddressResponse(senderAddressReceived, recipientAddressReceived, addressResponse)
 
 	responses.JSON(w, http.StatusOK, addressResponse)
 }
