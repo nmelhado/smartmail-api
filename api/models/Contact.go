@@ -18,7 +18,7 @@ type Contact struct {
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 }
 
-// Prepare formats the AddressAssignment object
+// Prepare formats the Contact object
 func (c *Contact) Prepare() {
 	c.ID = 0
 	c.User = User{}
@@ -40,6 +40,23 @@ func (c *Contact) SaveContacts(db *gorm.DB, userID uuid.UUID, contactID uuid.UUI
 	}
 
 	return nil
+}
+
+// GetContacts retrieves all of a user's contacts
+func GetContacts(db *gorm.DB, userID uuid.UUID) (contacts []Contact, err error) {
+	err = db.Debug().Model(&Contact{}).Where("user_id = ?", userID).Limit(100).Find(&contacts).Error
+	if err != nil {
+		return []Contact{}, err
+	}
+	if len(contacts) > 0 {
+		for i := range contacts {
+			err := db.Debug().Model(&User{}).Where("id = ?", contacts[i].ContactID).Take(&contacts[i].Contact).Error
+			if err != nil {
+				return []Contact{}, err
+			}
+		}
+	}
+	return contacts, nil
 }
 
 // DeleteContact removes a contact from the DB

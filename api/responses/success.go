@@ -23,6 +23,7 @@ type CreateUserResponse struct {
 type UserAndAddressResponse struct {
 	User      CreateUserResponse `json:"user"`
 	Addresses []BasicAddress     `json:"addresses"`
+	Contacts  []Contact          `json:"contacts"`
 	Token     string             `json:"token"`
 	Expires   time.Time          `json:"expires"`
 }
@@ -95,6 +96,19 @@ type AddressSmartIDResponse struct {
 	Country              string      `json:"country"`
 	Phone                null.String `json:"phone,omitempty"`
 	DeliveryInstructions string      `json:"delivery_instructions,omitempty"`
+}
+
+// Contacts is the array of contacts response for a contact request
+type Contacts struct {
+	Contacts []Contact `json:"contacts"`
+}
+
+// Contact is the single contact response for a contact request
+type Contact struct {
+	Name    string `json:"name"`
+	SmartID string `json:"smart_id"`
+	Phone   string `json:"phone"`
+	Email   string `json:"email"`
 }
 
 // TranslateAddressResponse converts an array of AddressAssignments into an array of AddressResponse
@@ -222,5 +236,23 @@ func TranslateAddresses(originalAddresses *[]models.AddressAssignment) (addresse
 		nextAddress := TranslateAddress(&address)
 		addresses = append(addresses, nextAddress)
 	}
+	return
+}
+
+// TranslateContacts converts an array of contacts into an array of contacts response
+func TranslateContacts(originalContacts []models.Contact) (contacts []Contact) {
+	for _, contact := range originalContacts {
+		nextContact := translateContact(contact)
+		contacts = append(contacts, nextContact)
+	}
+	return
+}
+
+// TranslateContact converts a single contact into a contact response
+func translateContact(originalContact models.Contact) (contact Contact) {
+	contact.Name = originalContact.Contact.FirstName + " " + originalContact.Contact.LastName
+	contact.SmartID = originalContact.Contact.SmartID
+	contact.Email = originalContact.Contact.Email
+	contact.Phone = originalContact.Contact.Phone
 	return
 }

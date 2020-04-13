@@ -52,6 +52,31 @@ func (server *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusCreated, userResponse)
 }
 
+// GetContacts gets a user's contacts
+func (server *Server) GetContacts(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	uid := uuid.FromStringOrNil(vars["id"])
+	tokenID, err := auth.ExtractTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+	if tokenID != uid {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	contacts, err := server.pullContacts(uid)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	finalContacts := responses.Contacts{Contacts: contacts}
+
+	responses.JSON(w, http.StatusOK, finalContacts)
+}
+
 // GetUsers retrieves 100 users
 func (server *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
 
@@ -143,4 +168,13 @@ func (server *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Entity", fmt.Sprintf("%d", uid))
 	responses.JSON(w, http.StatusNoContent, "")
+}
+
+func (server *Server) pullContacts(uid uuid.UUID) (contacts []responses.Contact, err error) {
+	rawContacts, err := models.GetContacts(server.DB, uid)
+	if err != nil {
+		return
+	}
+	contacts = responses.TranslateContacts(rawContacts)
+	return
 }

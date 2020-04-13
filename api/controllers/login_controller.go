@@ -49,9 +49,16 @@ func (server *Server) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	contacts, err := server.pullContacts(validUser.ID)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
 	response := responses.UserAndAddressResponse{
 		User:      finalUser,
 		Addresses: addresses,
+		Contacts:  contacts,
 		Token:     token,
 		Expires:   time.Now().Add(time.Hour * 1),
 	}
