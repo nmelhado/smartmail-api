@@ -142,22 +142,12 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 			return &AddressAssignment{}, errors.New("There is a conflict with another temporary address change - please make sure that the dates for temporary addresses don't overlap")
 		}
 	}
-	err = db.Debug().Model(&AddressAssignment{}).Create(&aa).Error
+	err = db.Debug().Set("gorm:auto_preload", true).Model(&AddressAssignment{}).Create(&aa).Error
 	if err != nil {
 		return &AddressAssignment{}, err
 	}
-	if aa.ID != 0 {
-		err = db.Debug().Model(&User{}).Where("id = ?", aa.UserID).Take(&aa.User).Error
-		if err != nil {
-			return &AddressAssignment{}, err
-		}
-		err = db.Debug().Model(&Address{}).Where("id = ?", aa.AddressID).Take(&aa.Address).Error
-		if err != nil {
-			return &AddressAssignment{}, err
-		}
-		if contains(permanentStatus, aa.Status) {
-			err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ? AND end_date IS NULL", permanentStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate.AddDate(0, 0, -1)), UpdatedAt: time.Now()}).Error
-		}
+	if aa.ID != 0 && contains(permanentStatus, aa.Status) {
+		err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ? AND end_date IS NULL", permanentStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate.AddDate(0, 0, -1)), UpdatedAt: time.Now()}).Error
 	}
 	return aa, nil
 }
@@ -211,20 +201,12 @@ func (aa *AddressAssignment) FindMailingAddressWithSmartID(db *gorm.DB, user Use
 	var err error
 	address := AddressAssignment{}
 
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, MailOnlyTemporary, Temporary, targetDate, targetDate).Find(&address).Error
+	err = db.Debug().Set("gorm:auto_preload", true).Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, MailOnlyTemporary, Temporary, targetDate, targetDate).Find(&address).Error
 	if err != nil {
-		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validMailStatus, targetDate, targetDate).Find(&address).Error
+		err = db.Debug().Set("gorm:auto_preload", true).Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validMailStatus, targetDate, targetDate).Find(&address).Error
 		if err != nil {
 			return &AddressAssignment{}, err
 		}
-	}
-
-	if address.ID > 0 {
-		err := db.Debug().Model(&Address{}).Where("id = ?", address.AddressID).Take(&address.Address).Error
-		if err != nil {
-			return &AddressAssignment{}, err
-		}
-		address.User = user
 	}
 	return &address, nil
 }
@@ -234,20 +216,12 @@ func (aa *AddressAssignment) FindPackageAddressWithSmartID(db *gorm.DB, user Use
 	var err error
 	address := AddressAssignment{}
 
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, PackageOnlyTemporary, Temporary, targetDate, targetDate).Find(&address).Error
+	err = db.Debug().Set("gorm:auto_preload", true).Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?, ?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, PackageOnlyTemporary, Temporary, targetDate, targetDate).Find(&address).Error
 	if err != nil {
-		err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validPackageStatus, targetDate, targetDate).Find(&address).Error
+		err = db.Debug().Set("gorm:auto_preload", true).Model(&AddressAssignment{}).Where("user_id = ? AND status IN (?) AND start_date < ? AND (end_date IS NULL OR end_date > ?)", user.ID, validPackageStatus, targetDate, targetDate).Find(&address).Error
 		if err != nil {
 			return &AddressAssignment{}, err
 		}
-	}
-
-	if address.ID > 0 {
-		err := db.Debug().Model(&Address{}).Where("id = ?", address.AddressID).Take(&address.Address).Error
-		if err != nil {
-			return &AddressAssignment{}, err
-		}
-		address.User = user
 	}
 	return &address, nil
 }
@@ -257,21 +231,9 @@ func (aa *AddressAssignment) FindAllActiveAddressesForUser(db *gorm.DB, uid uuid
 	var err error
 	addresses := []AddressAssignment{}
 	today := strings.Split(time.Now().String(), " ")[0]
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status NOT IN (?) AND (end_date IS NULL OR end_date > ?)", uid, expiredAndDeleted, today).Limit(100).Find(&addresses).Error
+	err = db.Debug().Set("gorm:auto_preload", true).Model(&AddressAssignment{}).Where("user_id = ? AND status NOT IN (?) AND (end_date IS NULL OR end_date > ?)", uid, expiredAndDeleted, today).Limit(100).Find(&addresses).Error
 	if err != nil {
 		return &[]AddressAssignment{}, err
-	}
-	if len(addresses) > 0 {
-		for i := range addresses {
-			err := db.Debug().Model(&User{}).Where("id = ?", addresses[i].UserID).Take(&addresses[i].User).Error
-			if err != nil {
-				return &[]AddressAssignment{}, err
-			}
-			err = db.Debug().Model(&Address{}).Where("id = ?", addresses[i].AddressID).Take(&addresses[i].Address).Error
-			if err != nil {
-				return &[]AddressAssignment{}, err
-			}
-		}
 	}
 	return &addresses, nil
 }
@@ -280,21 +242,9 @@ func (aa *AddressAssignment) FindAllActiveAddressesForUser(db *gorm.DB, uid uuid
 func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uuid.UUID) (*[]AddressAssignment, error) {
 	var err error
 	addresses := []AddressAssignment{}
-	err = db.Debug().Model(&AddressAssignment{}).Where("user_id = ? AND status <> ?", uid, Deleted).Limit(100).Find(&addresses).Error
+	err = db.Debug().Set("gorm:auto_preload", true).Model(&AddressAssignment{}).Where("user_id = ? AND status <> ?", uid, Deleted).Limit(100).Find(&addresses).Error
 	if err != nil {
 		return &[]AddressAssignment{}, err
-	}
-	if len(addresses) > 0 {
-		for i := range addresses {
-			err := db.Debug().Model(&User{}).Where("id = ?", addresses[i].UserID).Take(&addresses[i].User).Error
-			if err != nil {
-				return &[]AddressAssignment{}, err
-			}
-			err = db.Debug().Model(&Address{}).Where("id = ?", addresses[i].AddressID).Take(&addresses[i].Address).Error
-			if err != nil {
-				return &[]AddressAssignment{}, err
-			}
-		}
 	}
 	return &addresses, nil
 }

@@ -44,17 +44,9 @@ func (c *Contact) SaveContacts(db *gorm.DB, userID uuid.UUID, contactID uuid.UUI
 
 // GetContacts retrieves all of a user's contacts
 func GetContacts(db *gorm.DB, userID uuid.UUID) (contacts []Contact, err error) {
-	err = db.Debug().Model(&Contact{}).Where("user_id = ?", userID).Limit(100).Find(&contacts).Error
+	err = db.Debug().Model(&Contact{}).Where("user_id = ?", userID).Limit(100).Preload("Contact").Find(&contacts).Error
 	if err != nil {
 		return []Contact{}, err
-	}
-	if len(contacts) > 0 {
-		for i := range contacts {
-			err := db.Debug().Model(&User{}).Where("id = ?", contacts[i].ContactID).Take(&contacts[i].Contact).Error
-			if err != nil {
-				return []Contact{}, err
-			}
-		}
 	}
 	return contacts, nil
 }
