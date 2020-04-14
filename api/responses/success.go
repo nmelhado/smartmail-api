@@ -50,7 +50,6 @@ type BasicAddress struct {
 	AttentionTo          string        `json:"attention_to,omitempty"`
 	LineOne              string        `json:"line_one"`
 	LineTwo              string        `json:"line_two,omitempty"`
-	UnitNumber           string        `json:"unit_number,omitempty"`
 	City                 string        `json:"city"`
 	State                string        `json:"state"`
 	ZipCode              string        `json:"zip_code"`
@@ -72,7 +71,6 @@ type AddressResponse struct {
 	AttentionTo  string        `json:"attention_to,omitempty"`
 	LineOne      string        `json:"line_one"`
 	LineTwo      string        `json:"line_two,omitempty"`
-	UnitNumber   string        `json:"unit_number,omitempty"`
 	City         string        `json:"city"`
 	State        string        `json:"state"`
 	ZipCode      string        `json:"zip_code"`
@@ -95,7 +93,6 @@ type AddressSmartIDResponse struct {
 	AttentionTo          string      `json:"attention_to,omitempty"`
 	LineOne              string      `json:"line_one"`
 	LineTwo              string      `json:"line_two,omitempty"`
-	UnitNumber           string      `json:"unit_number,omitempty"`
 	City                 string      `json:"city"`
 	State                string      `json:"state"`
 	ZipCode              string      `json:"zip_code"`
@@ -136,7 +133,6 @@ func TranslateAddressResponse(originalAddress *models.AddressAssignment, reply *
 	reply.AttentionTo = originalAddress.Address.AttentionTo.String
 	reply.LineOne = originalAddress.Address.LineOne
 	reply.LineTwo = originalAddress.Address.LineTwo.String
-	reply.UnitNumber = originalAddress.Address.UnitNumber.String
 	reply.City = originalAddress.Address.City
 	reply.State = originalAddress.Address.State
 	reply.ZipCode = originalAddress.Address.ZipCode
@@ -162,7 +158,6 @@ func TranslateSmartAddressResponse(originalAddress *models.AddressAssignment, re
 	reply.AttentionTo = originalAddress.Address.AttentionTo.String
 	reply.LineOne = originalAddress.Address.LineOne
 	reply.LineTwo = originalAddress.Address.LineTwo.String
-	reply.UnitNumber = originalAddress.Address.UnitNumber.String
 	reply.City = originalAddress.Address.City
 	reply.State = originalAddress.Address.State
 	reply.ZipCode = originalAddress.Address.ZipCode
@@ -199,7 +194,6 @@ func TranslateUserAndAddressResponse(originalAddress *models.AddressAssignment, 
 		AttentionTo:          originalAddress.Address.AttentionTo.String,
 		LineOne:              originalAddress.Address.LineOne,
 		LineTwo:              originalAddress.Address.LineTwo.String,
-		UnitNumber:           originalAddress.Address.UnitNumber.String,
 		City:                 originalAddress.Address.City,
 		State:                originalAddress.Address.State,
 		ZipCode:              originalAddress.Address.ZipCode,
@@ -229,7 +223,6 @@ func TranslateAddress(originalAddress *models.AddressAssignment) (address BasicA
 		AttentionTo:          originalAddress.Address.AttentionTo.String,
 		LineOne:              originalAddress.Address.LineOne,
 		LineTwo:              originalAddress.Address.LineTwo.String,
-		UnitNumber:           originalAddress.Address.UnitNumber.String,
 		City:                 originalAddress.Address.City,
 		State:                originalAddress.Address.State,
 		ZipCode:              originalAddress.Address.ZipCode,

@@ -142,12 +142,22 @@ func (aa *AddressAssignment) SaveAddressAssignment(db *gorm.DB) (*AddressAssignm
 			return &AddressAssignment{}, errors.New("There is a conflict with another temporary address change - please make sure that the dates for temporary addresses don't overlap")
 		}
 	}
-	err = db.Debug().Set("gorm:auto_preload", true).Model(&AddressAssignment{}).Create(&aa).Error
+	err = db.Debug().Model(&AddressAssignment{}).Create(&aa).Error
 	if err != nil {
 		return &AddressAssignment{}, err
 	}
-	if aa.ID != 0 && contains(permanentStatus, aa.Status) {
-		err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ? AND end_date IS NULL", permanentStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate.AddDate(0, 0, -1)), UpdatedAt: time.Now()}).Error
+	if aa.ID != 0 {
+		err = db.Debug().Model(&User{}).Where("id = ?", aa.UserID).Take(&aa.User).Error
+		if err != nil {
+			return &AddressAssignment{}, err
+		}
+		err = db.Debug().Model(&Address{}).Where("id = ?", aa.AddressID).Take(&aa.Address).Error
+		if err != nil {
+			return &AddressAssignment{}, err
+		}
+		if contains(permanentStatus, aa.Status) {
+			err = db.Debug().Model(&AddressAssignment{}).Where("status IN (?) AND id <> ? AND user_id = ? AND end_date IS NULL", permanentStatus, aa.ID, aa.UserID).Updates(AddressAssignment{EndDate: null.TimeFrom(aa.StartDate.AddDate(0, 0, -1)), UpdatedAt: time.Now()}).Error
+		}
 	}
 	return aa, nil
 }

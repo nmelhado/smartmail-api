@@ -16,7 +16,6 @@ type Address struct {
 	Nickname             null.String `gorm:"size:255;" json:"nickname"`
 	LineOne              string      `gorm:"size:255;not null;" json:"line_one"`
 	LineTwo              null.String `gorm:"size:255;" json:"line_two"`
-	UnitNumber           null.String `gorm:"size:255;" json:"unit_number"`
 	BusinessName         null.String `gorm:"size:255;" json:"business_name"`
 	AttentionTo          null.String `gorm:"size:255;" json:"attention_to"`
 	City                 string      `gorm:"size:255;not null;" json:"city"`
@@ -37,7 +36,6 @@ func (a *Address) Prepare() {
 	a.Nickname.String = html.UnescapeString(strings.TrimSpace(a.Nickname.String))
 	a.LineOne = html.UnescapeString(strings.TrimSpace(a.LineOne))
 	a.LineTwo.String = html.UnescapeString(strings.TrimSpace(a.LineTwo.String))
-	a.UnitNumber.String = html.UnescapeString(strings.TrimSpace(a.UnitNumber.String))
 	a.BusinessName.String = html.UnescapeString(strings.TrimSpace(a.BusinessName.String))
 	a.AttentionTo.String = html.UnescapeString(strings.TrimSpace(a.AttentionTo.String))
 	a.City = html.UnescapeString(strings.TrimSpace(a.City))
@@ -122,7 +120,6 @@ func (a *Address) Update(db *gorm.DB, aid uint64) error {
 			Nickname:             a.Nickname,
 			LineOne:              a.LineOne,
 			LineTwo:              a.LineTwo,
-			UnitNumber:           a.UnitNumber,
 			BusinessName:         a.BusinessName,
 			AttentionTo:          a.AttentionTo,
 			City:                 a.City,
