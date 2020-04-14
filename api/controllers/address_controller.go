@@ -325,7 +325,7 @@ func (server *Server) GetMailingAddressBySmartID(w http.ResponseWriter, r *http.
 
 	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
 
-	if user.ID != reqUser.ID && reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
+	if reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
 		fmt.Print(reqUser.Authority)
 		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
 		return
@@ -343,6 +343,48 @@ func (server *Server) GetMailingAddressBySmartID(w http.ResponseWriter, r *http.
 	addressResponse.DeliveryInstructions = ""
 
 	responses.JSON(w, http.StatusOK, addressResponse)
+}
+
+// GetMailingZipBySmartID retrieves a user's zip code using a customer's SmartID
+func (server *Server) GetMailingZipBySmartID(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	smartID := vars["smart_id"]
+	date, err := time.Parse("2006-01-02", vars["date"])
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+	user := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(smartID)).Take(&user).Error
+
+	reqUID, err := auth.ExtractTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+	reqUser := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+
+	if reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth && reqUser.Authority != models.RetailerAuth {
+		fmt.Print(reqUser.Authority)
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	address := models.AddressAssignment{}
+	addressReceived, err := address.FindMailingAddressWithSmartID(server.DB, user, date)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	zipResponse := &responses.ZipResponse{}
+	responses.TranslateZipResponse(addressReceived, zipResponse)
+
+	responses.JSON(w, http.StatusOK, zipResponse)
 }
 
 // GetPackageAddressToAndFromBySmartID retrieves a user's mailing adress using a customer's SmartID
@@ -437,7 +479,7 @@ func (server *Server) GetPackageAddressBySmartID(w http.ResponseWriter, r *http.
 
 	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
 
-	if user.ID != reqUser.ID && reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
+	if reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
 		return
 	}
@@ -453,6 +495,48 @@ func (server *Server) GetPackageAddressBySmartID(w http.ResponseWriter, r *http.
 	responses.TranslateSmartAddressResponse(addressReceived, addressResponse)
 
 	responses.JSON(w, http.StatusOK, addressResponse)
+}
+
+// GetPackageZipBySmartID retrieves a user's zip code using a customer's SmartID
+func (server *Server) GetPackageZipBySmartID(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	smartID := vars["smart_id"]
+	date, err := time.Parse("2006-01-02", vars["date"])
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+	user := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(smartID)).Take(&user).Error
+
+	reqUID, err := auth.ExtractTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+	reqUser := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+
+	if reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth && reqUser.Authority != models.RetailerAuth {
+		fmt.Print(reqUser.Authority)
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	address := models.AddressAssignment{}
+	addressReceived, err := address.FindPackageAddressWithSmartID(server.DB, user, date)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	zipResponse := &responses.ZipResponse{}
+	responses.TranslateZipResponse(addressReceived, zipResponse)
+
+	responses.JSON(w, http.StatusOK, zipResponse)
 }
 
 // UpdateAddress updates the values of an address (this is used to fix errors with an address NOT change addresses)

@@ -10,6 +10,9 @@ func (s *Server) initializeRoutes() {
 	// Login Route
 	s.Router.HandleFunc("/login", middlewares.SetMiddlewareJSON(s.Login)).Methods("POST")
 
+	// Token Route
+	s.Router.HandleFunc("/token", middlewares.SetMiddlewareJSON(s.Token)).Methods("POST")
+
 	//Sign up route
 	s.Router.HandleFunc("/signup", middlewares.SetMiddlewareJSON(s.CreateUserAndAddress)).Methods("POST")
 
@@ -26,6 +29,10 @@ func (s *Server) initializeRoutes() {
 	// Addresses routes
 	s.Router.HandleFunc("/addresses/mail/{sender_smart_id}/{recipient_smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetMailingAddressToAndFromBySmartID)).Methods("GET")
 	s.Router.HandleFunc("/addresses/package/{sender_smart_id}/{recipient_smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetPackageAddressToAndFromBySmartID)).Methods("GET")
+
+	// Zip routes
+	s.Router.HandleFunc("/zip/mail/{smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetMailingZipBySmartID)).Methods("GET")
+	s.Router.HandleFunc("/zip/package/{smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetPackageZipBySmartID)).Methods("GET")
 
 	//Address routes
 	s.Router.HandleFunc("/address", middlewares.SetMiddlewareJSON(s.CreateAddress)).Methods("POST")

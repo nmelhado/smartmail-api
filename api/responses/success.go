@@ -19,6 +19,12 @@ type CreateUserResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// TokenResponse is the struct returned when a token request
+type TokenResponse struct {
+	Token   string    `json:"token"`
+	Expires time.Time `json:"expires"`
+}
+
 // UserAndAddressResponse is the struct returned when a new user and address are simultaneously created
 type UserAndAddressResponse struct {
 	User      CreateUserResponse `json:"user"`
@@ -98,6 +104,12 @@ type AddressSmartIDResponse struct {
 	DeliveryInstructions string      `json:"delivery_instructions,omitempty"`
 }
 
+// ZipResponse is to return a zip code to a retailer or mailer
+type ZipResponse struct {
+	SmartID string `json:"smart_id"`
+	ZipCode string `json:"zip_code"`
+}
+
 // Contacts is the array of contacts response for a contact request
 type Contacts struct {
 	Contacts []Contact `json:"contacts"`
@@ -141,7 +153,7 @@ func TranslateToAndFromSmartAddressResponse(senderAddress *models.AddressAssignm
 	TranslateSmartAddressResponse(recipientAddress, &reply.Recipient)
 }
 
-// TranslateSmartAddressResponse converts an array of AddressAssignments into an array of AddressSmartIDResponse
+// TranslateSmartAddressResponse converts an AddressAssignments into an AddressSmartIDResponse
 func TranslateSmartAddressResponse(originalAddress *models.AddressAssignment, reply *AddressSmartIDResponse) {
 	reply.SmartID = originalAddress.User.SmartID
 	reply.FirstName = originalAddress.User.FirstName
@@ -160,6 +172,12 @@ func TranslateSmartAddressResponse(originalAddress *models.AddressAssignment, re
 		reply.Phone.SetValid(originalAddress.User.Phone)
 	}
 	reply.DeliveryInstructions = originalAddress.Address.DeliveryInstructions.String
+}
+
+// TranslateZipResponse converts an AddressAssignment into a ZipResponse
+func TranslateZipResponse(originalAddress *models.AddressAssignment, reply *ZipResponse) {
+	reply.SmartID = originalAddress.User.SmartID
+	reply.ZipCode = originalAddress.Address.ZipCode
 }
 
 // TranslateUserAndAddressResponse converts an AddressAssignment into a UserAndAddressResponse
