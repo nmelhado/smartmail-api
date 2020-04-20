@@ -42,6 +42,12 @@ func (c *Contact) SaveContacts(db *gorm.DB, userID uuid.UUID, contactID uuid.UUI
 	return nil
 }
 
+// SaveContact is used to save a contact to an avvount
+func (c *Contact) SaveContact(db *gorm.DB, userID uuid.UUID, contactID uuid.UUID) (contact Contact, err error) {
+	err = db.Debug().Model(&Contact{}).Where("user_id = ? AND contact_id = ?", userID, contactID).Attrs(Contact{UserID: userID, ContactID: contactID, CreatedAt: time.Now()}).FirstOrCreate(&contact).Error
+	return
+}
+
 // GetContacts retrieves all of a user's contacts
 func GetContacts(db *gorm.DB, userID uuid.UUID) (contacts []Contact, err error) {
 	err = db.Debug().Model(&Contact{}).Where("user_id = ?", userID).Limit(100).Preload("Contact").Find(&contacts).Error

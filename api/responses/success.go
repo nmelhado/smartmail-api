@@ -253,14 +253,14 @@ func TranslateAddresses(originalAddresses *[]models.AddressAssignment) (addresse
 // TranslateContacts converts an array of contacts into an array of contacts response
 func TranslateContacts(originalContacts []models.Contact) (contacts []Contact) {
 	for _, contact := range originalContacts {
-		nextContact := translateContact(contact)
+		nextContact := TranslateContact(contact)
 		contacts = append(contacts, nextContact)
 	}
 	return
 }
 
 // TranslateContact converts a single contact into a contact response
-func translateContact(originalContact models.Contact) (contact Contact) {
+func TranslateContact(originalContact models.Contact) (contact Contact) {
 	contact.Name = originalContact.Contact.FirstName + " " + originalContact.Contact.LastName
 	contact.SmartID = originalContact.Contact.SmartID
 	contact.Email = originalContact.Contact.Email

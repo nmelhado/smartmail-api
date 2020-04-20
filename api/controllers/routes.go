@@ -18,6 +18,7 @@ func (s *Server) initializeRoutes() {
 
 	//Contacts route
 	s.Router.HandleFunc("/contacts/{id}", middlewares.SetMiddlewareJSON(s.GetContacts)).Methods("GET")
+	s.Router.HandleFunc("/contacts", middlewares.SetMiddlewareJSON(s.AddContact)).Methods("POST")
 
 	//Users routes
 	s.Router.HandleFunc("/users", middlewares.SetMiddlewareJSON(s.CreateUser)).Methods("POST")
