@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -79,6 +80,8 @@ func (server *Server) AddContact(w http.ResponseWriter, r *http.Request) {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
 	}
+
+	fmt.Printf("contact: %+v", newContact)
 
 	contactResponse := responses.TranslateContact(newContact)
 

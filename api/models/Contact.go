@@ -38,13 +38,17 @@ func (c *Contact) SaveContacts(db *gorm.DB, userID uuid.UUID, contactID uuid.UUI
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
 // SaveContact is used to save a contact to an avvount
 func (c *Contact) SaveContact(db *gorm.DB, userID uuid.UUID, contactID uuid.UUID) (contact Contact, err error) {
 	err = db.Debug().Model(&Contact{}).Where("user_id = ? AND contact_id = ?", userID, contactID).Attrs(Contact{UserID: userID, ContactID: contactID, CreatedAt: time.Now()}).FirstOrCreate(&contact).Error
+	if err != nil {
+		return Contact{}, err
+	}
+	err = db.Debug().Set("gorm:auto_preload", true).Model(&Contact{}).Take(&contact).Error
+
 	return
 }
 
