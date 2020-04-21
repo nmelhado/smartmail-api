@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"sort"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -58,6 +59,10 @@ func GetContacts(db *gorm.DB, userID uuid.UUID) (contacts []Contact, err error) 
 	if err != nil {
 		return []Contact{}, err
 	}
+
+	// orders by first name and then last name
+	sort.SliceStable(contacts, func(i, j int) bool { return contacts[i].Contact.LastName < contacts[j].Contact.LastName })
+	sort.SliceStable(contacts, func(i, j int) bool { return contacts[i].Contact.FirstName < contacts[j].Contact.FirstName })
 	return contacts, nil
 }
 
