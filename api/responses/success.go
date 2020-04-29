@@ -1,6 +1,7 @@
 package responses
 
 import (
+	"sort"
 	"time"
 
 	"github.com/nmelhado/smartmail-api/api/models"
@@ -256,6 +257,9 @@ func TranslateContacts(originalContacts []models.Contact) (contacts []Contact) {
 		nextContact := TranslateContact(contact)
 		contacts = append(contacts, nextContact)
 	}
+
+	// orders by first name and then last name
+	sort.SliceStable(contacts, func(i, j int) bool { return contacts[i].Name < contacts[j].Name })
 	return
 }
 

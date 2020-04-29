@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"sort"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -55,14 +54,10 @@ func (c *Contact) SaveContact(db *gorm.DB, userID uuid.UUID, contactID uuid.UUID
 
 // GetContacts retrieves all of a user's contacts
 func GetContacts(db *gorm.DB, userID uuid.UUID) (contacts []Contact, err error) {
-	err = db.Debug().Model(&Contact{}).Where("user_id = ?", userID).Limit(100).Preload("Contact").Find(&contacts).Error
+	err = db.Debug().Model(&Contact{}).Where("user_id = ?", userID).Preload("Contact").Find(&contacts).Error
 	if err != nil {
 		return []Contact{}, err
 	}
-
-	// orders by first name and then last name
-	sort.SliceStable(contacts, func(i, j int) bool { return contacts[i].Contact.LastName < contacts[j].Contact.LastName })
-	sort.SliceStable(contacts, func(i, j int) bool { return contacts[i].Contact.FirstName < contacts[j].Contact.FirstName })
 	return contacts, nil
 }
 
