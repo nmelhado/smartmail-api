@@ -26,6 +26,19 @@ type TokenResponse struct {
 	Expires time.Time `json:"expires"`
 }
 
+// PasswordResetRequest is the struct returned when a user requests a password reset
+type PasswordResetRequest struct {
+	Token string `json:"token"`
+	Email string `json:"email"`
+	Name  string `json:"name"`
+}
+
+// PasswordReset is the struct returned when a user resets their password
+type PasswordReset struct {
+	Success bool   `json:"success"`
+	Name    string `json:"name"`
+}
+
 // UserAndAddressResponse is the struct returned when a new user and address are simultaneously created
 type UserAndAddressResponse struct {
 	User      CreateUserResponse `json:"user"`

@@ -10,6 +10,10 @@ func (s *Server) initializeRoutes() {
 	// Login Route
 	s.Router.HandleFunc("/login", middlewares.SetMiddlewareJSON(s.Login)).Methods("POST")
 
+	// Forgot Password Route
+	s.Router.HandleFunc("/forgot_password", middlewares.SetMiddlewareJSON(s.RequestResetPassword)).Methods("POST")
+	s.Router.HandleFunc("/reset_password", middlewares.SetMiddlewareJSON(s.ResetPassword)).Methods("POST")
+
 	// Token Route
 	s.Router.HandleFunc("/token", middlewares.SetMiddlewareJSON(s.Token)).Methods("POST")
 

@@ -9,5 +9,3 @@ handlers:
   redirect_http_response_code: 301
   script: auto
   
-# - url: /.*
-#   script: _go_app

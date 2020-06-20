@@ -13,14 +13,29 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-func CreateToken(user_id uuid.UUID) (string, error) {
+// CreateToken creates a login token that will be used by UI and API users
+// expires after 1 hour
+func CreateToken(userID uuid.UUID) (string, error) {
 	claims := jwt.MapClaims{}
 	claims["authorized"] = true
-	claims["user_id"] = user_id
+	claims["type"] = "auth"
+	claims["user_id"] = userID
 	claims["exp"] = time.Now().Add(time.Hour * 1).Unix() //Token expires after 1 hour
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(os.Getenv("API_SECRET")))
+}
 
+// CreatePasswordResetToken creates a password reset token that will be included in a password reset link
+// expires after 15 minutes
+func CreatePasswordResetToken(userID uuid.UUID, password string) (string, error) {
+	claims := jwt.MapClaims{}
+	claims["authorized"] = true
+	claims["type"] = "reset"
+	claims["user_id"] = userID
+	claims["password"] = password
+	claims["exp"] = time.Now().Add(time.Hour * 1).Unix() //Token expires after 1 hour
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(os.Getenv("API_SECRET")))
 }
 
 func TokenValid(r *http.Request) error {
@@ -66,7 +81,7 @@ func ExtractTokenID(r *http.Request) (uuid.UUID, error) {
 		return uuid.UUID{}, err
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
-	if ok && token.Valid {
+	if ok && token.Valid && claims["type"] == "auth" {
 		uid, err := uuid.FromString(fmt.Sprintf("%s", claims["user_id"]))
 		if err != nil {
 			return uuid.UUID{}, err
@@ -74,6 +89,29 @@ func ExtractTokenID(r *http.Request) (uuid.UUID, error) {
 		return uid, nil
 	}
 	return uuid.UUID{}, nil
+}
+
+func ExtractResetTokenID(r *http.Request) (uuid.UUID, string, error) {
+
+	tokenString := ExtractToken(r)
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("API_SECRET")), nil
+	})
+	if err != nil {
+		return uuid.UUID{}, "", err
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok && token.Valid && claims["type"] == "reset" {
+		uid, err := uuid.FromString(fmt.Sprintf("%s", claims["user_id"]))
+		if err != nil {
+			return uuid.UUID{}, "", err
+		}
+		return uid, fmt.Sprintf("%s", claims["password"]), nil
+	}
+	return uuid.UUID{}, "", nil
 }
 
 //Pretty display the claims nicely in the terminal
