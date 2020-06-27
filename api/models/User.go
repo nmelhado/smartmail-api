@@ -20,23 +20,17 @@ type authority string
 postgres command to create enum:
 CREATE TYPE authority AS ENUM (
 	'user',
-	'mailer',
 	'admin',
-	'engineer',
-	'retailer');
+	'engineer');
 */
 
 const (
 	// UserAuth is the user authority type
 	UserAuth authority = "user"
-	// MailerAuth is the mailer authority type
-	MailerAuth authority = "mailer"
 	// AdminAuth is the admin authority type
 	AdminAuth authority = "admin"
 	// EngineerAuth is the engineer authority type
 	EngineerAuth authority = "engineer"
-	// RetailerAuth is the retailer authority type
-	RetailerAuth authority = "retailer"
 )
 
 func (a *authority) Scan(value interface{}) error {
@@ -69,7 +63,7 @@ func (u *User) BeforeCreate(scope *gorm.Scope) error {
 	return scope.SetColumn("ID", uuid)
 }
 
-// Hash creates a hass of the user's provided oassword
+// Hash creates a hash of the user's provided oassword
 func Hash(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }
@@ -182,7 +176,7 @@ func (u *User) FindAllUsers(db *gorm.DB) (*[]User, error) {
 	return &users, err
 }
 
-// FindUserByID retrieves the data for a user by uing their ID
+// FindUserByID retrieves the data for a user by using their ID
 func (u *User) FindUserByID(db *gorm.DB, uid uuid.UUID) (*User, error) {
 	var err error
 	err = db.Debug().Model(User{}).Where("id = ?", uid).Take(&u).Error

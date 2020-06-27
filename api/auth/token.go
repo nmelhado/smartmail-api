@@ -15,10 +15,10 @@ import (
 
 // CreateToken creates a login token that will be used by UI and API users
 // expires after 1 hour
-func CreateToken(userID uuid.UUID) (string, error) {
+func CreateToken(userID uuid.UUID, authority string) (string, error) {
 	claims := jwt.MapClaims{}
 	claims["authorized"] = true
-	claims["type"] = "auth"
+	claims["permission"] = authority
 	claims["user_id"] = userID
 	claims["exp"] = time.Now().Add(time.Hour * 1).Unix() //Token expires after 1 hour
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -68,7 +68,7 @@ func ExtractToken(r *http.Request) string {
 	return ""
 }
 
-func ExtractTokenID(r *http.Request) (uuid.UUID, error) {
+func ExtractUITokenID(r *http.Request) (uuid.UUID, error) {
 
 	tokenString := ExtractToken(r)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -81,7 +81,7 @@ func ExtractTokenID(r *http.Request) (uuid.UUID, error) {
 		return uuid.UUID{}, err
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
-	if ok && token.Valid && claims["type"] == "auth" {
+	if ok && token.Valid && claims["permission"] == "ui" {
 		uid, err := uuid.FromString(fmt.Sprintf("%s", claims["user_id"]))
 		if err != nil {
 			return uuid.UUID{}, err
@@ -89,6 +89,29 @@ func ExtractTokenID(r *http.Request) (uuid.UUID, error) {
 		return uid, nil
 	}
 	return uuid.UUID{}, nil
+}
+
+func ExtractAPIUserTokenID(r *http.Request) (uuid.UUID, string, error) {
+
+	tokenString := ExtractToken(r)
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("API_SECRET")), nil
+	})
+	if err != nil {
+		return uuid.UUID{}, "", err
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok && token.Valid {
+		uid, err := uuid.FromString(fmt.Sprintf("%s", claims["user_id"]))
+		if err != nil {
+			return uuid.UUID{}, "", err
+		}
+		return uid, fmt.Sprintf("%s", claims["permission"]), nil
+	}
+	return uuid.UUID{}, "", nil
 }
 
 func ExtractResetTokenID(r *http.Request) (uuid.UUID, string, error) {

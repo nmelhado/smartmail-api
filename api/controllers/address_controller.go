@@ -15,6 +15,8 @@ import (
 	"github.com/nmelhado/smartmail-api/api/models"
 	"github.com/nmelhado/smartmail-api/api/responses"
 	"github.com/nmelhado/smartmail-api/api/utils/formaterror"
+	uuid "github.com/satori/go.uuid"
+	"gopkg.in/guregu/null.v3"
 )
 
 type geoInfo struct {
@@ -54,13 +56,15 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	uid, err := auth.ExtractTokenID(r)
+	uid, err := auth.ExtractUITokenID(r)
 	if err != nil {
+		fmt.Print("\nUnauthorized\n")
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
-	fmt.Printf("user id: %+v", uid)
+
 	if uid != addressAssignment.UserID {
+		fmt.Print("\nUnauthorized\n")
 		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
 		return
 	}
@@ -69,6 +73,7 @@ func (server *Server) CreateAddress(w http.ResponseWriter, r *http.Request) {
 
 	err = server.DB.Debug().Model(models.User{}).Where("id = ?", uid).Take(&user).Error
 	if err != nil {
+		fmt.Print("\nUnauthorized\n")
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
@@ -231,12 +236,33 @@ func (server *Server) GetAddressByID(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, addressReceived)
 }
 
-// GetMailingAddressToAndFromBySmartID retrieves a user's mailing adress using a customer's SmartID
+// GetMailingAddressToAndFromBySmartID retrieves a user's mailing address using a customer's SmartID
 func (server *Server) GetMailingAddressToAndFromBySmartID(w http.ResponseWriter, r *http.Request) {
+	reqUID, permission, err := auth.ExtractAPIUserTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	reqUser := models.APIUser{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	hasPermission := models.FullAddressPermissions(reqUser.Permission)
+
+	if !hasPermission || string(reqUser.Permission) != permission {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
 
 	vars := mux.Vars(r)
-	senderSmartID := vars["sender_smart_id"]
-	recipientSmartID := vars["recipient_smart_id"]
+	senderSmartID := sanitizeSmartID(strings.ToUpper(vars["sender_smart_id"]))
+	recipientSmartID := sanitizeSmartID(strings.ToUpper(vars["recipient_smart_id"]))
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -246,30 +272,15 @@ func (server *Server) GetMailingAddressToAndFromBySmartID(w http.ResponseWriter,
 	sender := models.User{}
 	recipient := models.User{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(senderSmartID)).Take(&sender).Error
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", senderSmartID).Take(&sender).Error
 	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, fmt.Errorf("Unable to find user with smartID: %s", strings.ToUpper(senderSmartID)))
+		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find sender with smartID: %s", senderSmartID))
 		return
 	}
 
-	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(recipientSmartID)).Take(&recipient).Error
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", recipientSmartID).Take(&recipient).Error
 	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, fmt.Errorf("Unable to find user with smartID: %s", strings.ToUpper(recipientSmartID)))
-		return
-	}
-
-	reqUID, err := auth.ExtractTokenID(r)
-	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
-		return
-	}
-	reqUser := models.User{}
-
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
-
-	if reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
-		fmt.Print(reqUser.Authority)
-		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find recipient with smartID: %s", recipientSmartID))
 		return
 	}
 
@@ -302,32 +313,43 @@ func (server *Server) GetMailingAddressToAndFromBySmartID(w http.ResponseWriter,
 	responses.JSON(w, http.StatusOK, addressResponse)
 }
 
-// GetMailingAddressBySmartID retrieves a user's mailing adress using a customer's SmartID
+// GetMailingAddressBySmartID retrieves a user's mailing address using a customer's SmartID
 func (server *Server) GetMailingAddressBySmartID(w http.ResponseWriter, r *http.Request) {
+	reqUID, permission, err := auth.ExtractAPIUserTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	reqUser := models.APIUser{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	hasPermission := models.FullAddressPermissions(reqUser.Permission)
+
+	if !hasPermission || string(reqUser.Permission) != permission {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
 
 	vars := mux.Vars(r)
-	smartID := vars["smart_id"]
+	smartID := sanitizeSmartID(strings.ToUpper(vars["smart_id"]))
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 		return
 	}
+
 	user := models.User{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(smartID)).Take(&user).Error
-
-	reqUID, err := auth.ExtractTokenID(r)
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", smartID).Take(&user).Error
 	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
-		return
-	}
-	reqUser := models.User{}
-
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
-
-	if reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
-		fmt.Print(reqUser.Authority)
-		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find smartID: %s", smartID))
 		return
 	}
 
@@ -347,9 +369,36 @@ func (server *Server) GetMailingAddressBySmartID(w http.ResponseWriter, r *http.
 
 // GetMailingZipBySmartID retrieves a user's zip code using a customer's SmartID
 func (server *Server) GetMailingZipBySmartID(w http.ResponseWriter, r *http.Request) {
+	reqUID, permission, err := auth.ExtractAPIUserTokenID(r)
+	if err != nil {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	reqUser := models.APIUser{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	if err != nil {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	hasPermission := models.ZipPermissions(reqUser.Permission)
+
+	fmt.Printf("permission: %s", permission)
+	fmt.Printf("reqUser.Permission: %s", reqUser.Permission)
+	fmt.Printf("hasPermission: %v", hasPermission)
+
+	if !hasPermission || string(reqUser.Permission) != permission {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
 
 	vars := mux.Vars(r)
-	smartID := vars["smart_id"]
+	smartID := sanitizeSmartID(strings.ToUpper(vars["smart_id"]))
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -357,20 +406,9 @@ func (server *Server) GetMailingZipBySmartID(w http.ResponseWriter, r *http.Requ
 	}
 	user := models.User{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(smartID)).Take(&user).Error
-
-	reqUID, err := auth.ExtractTokenID(r)
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", smartID).Take(&user).Error
 	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
-		return
-	}
-	reqUser := models.User{}
-
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
-
-	if reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth && reqUser.Authority != models.RetailerAuth {
-		fmt.Print(reqUser.Authority)
-		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find smartID: %s", smartID))
 		return
 	}
 
@@ -387,12 +425,43 @@ func (server *Server) GetMailingZipBySmartID(w http.ResponseWriter, r *http.Requ
 	responses.JSON(w, http.StatusOK, zipResponse)
 }
 
-// GetPackageAddressToAndFromBySmartID retrieves a user's mailing adress using a customer's SmartID
+// GetPackageAddressToAndFromBySmartID retrieves a user's mailing address using a customer's SmartID
 func (server *Server) GetPackageAddressToAndFromBySmartID(w http.ResponseWriter, r *http.Request) {
+	reqUID, permission, err := auth.ExtractAPIUserTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	reqUser := models.APIUser{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	hasPermission := models.FullAddressPermissions(reqUser.Permission)
+
+	if !hasPermission || string(reqUser.Permission) != permission {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
 
 	vars := mux.Vars(r)
-	senderSmartID := vars["sender_smart_id"]
-	recipientSmartID := vars["recipient_smart_id"]
+	senderSmartID := sanitizeSmartID(strings.ToUpper(vars["sender_smart_id"]))
+	recipientSmartID := sanitizeSmartID(strings.ToUpper(vars["recipient_smart_id"]))
+	tracking := null.StringFromPtr(nil)
+	trackingQuery, ok := vars["tracking"]
+	if ok {
+		tracking = null.StringFrom(trackingQuery)
+	}
+	description := null.StringFromPtr(nil)
+	descriptionQuery, ok := vars["tracking"]
+	if ok {
+		description = null.StringFrom(descriptionQuery)
+	}
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -402,30 +471,15 @@ func (server *Server) GetPackageAddressToAndFromBySmartID(w http.ResponseWriter,
 	sender := models.User{}
 	recipient := models.User{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(senderSmartID)).Take(&sender).Error
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", senderSmartID).Take(&sender).Error
 	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, fmt.Errorf("Unable to find user with smartID: %s", strings.ToUpper(senderSmartID)))
+		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find sender with smartID: %s", senderSmartID))
 		return
 	}
 
-	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(recipientSmartID)).Take(&recipient).Error
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", recipientSmartID).Take(&recipient).Error
 	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, fmt.Errorf("Unable to find user with smartID: %s", strings.ToUpper(recipientSmartID)))
-		return
-	}
-
-	reqUID, err := auth.ExtractTokenID(r)
-	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
-		return
-	}
-	reqUser := models.User{}
-
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
-
-	if reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
-		fmt.Print(reqUser.Authority)
-		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find recipient with smartID: %s", recipientSmartID))
 		return
 	}
 
@@ -450,37 +504,100 @@ func (server *Server) GetPackageAddressToAndFromBySmartID(w http.ResponseWriter,
 		return
 	}
 
+	newPackage := models.Package{
+		MailCarrierID: reqUID,
+		SenderID: uuid.NullUUID{
+			UUID:  sender.ID,
+			Valid: true,
+		},
+		RecipientID: uuid.NullUUID{
+			UUID:  recipient.ID,
+			Valid: true,
+		},
+		Tracking: tracking,
+	}
+	savedPackage, err := newPackage.SavePackage(server.DB)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if tracking.Valid {
+		newPackageDescriptionSender := models.PackageDescription{
+			UserID:      sender.ID,
+			PackageID:   savedPackage.ID,
+			Description: description,
+		}
+		err = newPackageDescriptionSender.SavePackageDescription(server.DB)
+		if err != nil {
+			responses.ERROR(w, http.StatusInternalServerError, err)
+			return
+		}
+		newPackageDescriptionRecipient := models.PackageDescription{
+			UserID:      recipient.ID,
+			PackageID:   savedPackage.ID,
+			Description: description,
+		}
+		err = newPackageDescriptionRecipient.SavePackageDescription(server.DB)
+		if err != nil {
+			responses.ERROR(w, http.StatusInternalServerError, err)
+			return
+		}
+	}
+
 	addressResponse := &responses.ToAndFromAddressSmartIDResponse{}
 	responses.TranslateToAndFromSmartAddressResponse(senderAddressReceived, recipientAddressReceived, addressResponse)
 
 	responses.JSON(w, http.StatusOK, addressResponse)
 }
 
-// GetPackageAddressBySmartID retrieves a user's package adress using a customer's SmartID
-func (server *Server) GetPackageAddressBySmartID(w http.ResponseWriter, r *http.Request) {
+// GetPackageSenderAddressBySmartID retrieves a sender's package address using a customer's SmartID
+func (server *Server) GetPackageSenderAddressBySmartID(w http.ResponseWriter, r *http.Request) {
+	reqUID, permission, err := auth.ExtractAPIUserTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	reqUser := models.APIUser{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	hasPermission := models.FullAddressPermissions(reqUser.Permission)
+
+	if !hasPermission || string(reqUser.Permission) != permission {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
 
 	vars := mux.Vars(r)
-	smartID := vars["smart_id"]
+	smartID := sanitizeSmartID(strings.ToUpper(vars["smart_id"]))
+	tracking := null.StringFromPtr(nil)
+	trackingQuery, ok := vars["tracking"]
+	if ok {
+		tracking = null.StringFrom(trackingQuery)
+	}
+	description := null.StringFromPtr(nil)
+	descriptionQuery, ok := vars["tracking"]
+	if ok {
+		description = null.StringFrom(descriptionQuery)
+	}
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 		return
 	}
+
 	user := models.User{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(smartID)).Take(&user).Error
-
-	reqUID, err := auth.ExtractTokenID(r)
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", smartID).Take(&user).Error
 	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
-		return
-	}
-	reqUser := models.User{}
-
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
-
-	if reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find smartID: %s", smartID))
 		return
 	}
 
@@ -491,6 +608,125 @@ func (server *Server) GetPackageAddressBySmartID(w http.ResponseWriter, r *http.
 		return
 	}
 
+	newPackage := models.Package{
+		MailCarrierID: reqUID,
+		SenderID: uuid.NullUUID{
+			UUID:  user.ID,
+			Valid: true,
+		},
+		RecipientID: uuid.NullUUID{},
+		Tracking:    tracking,
+	}
+	savedPackage, err := newPackage.SavePackage(server.DB)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if tracking.Valid {
+		newPackageDescription := models.PackageDescription{
+			UserID:      user.ID,
+			PackageID:   savedPackage.ID,
+			Description: description,
+		}
+		err = newPackageDescription.SavePackageDescription(server.DB)
+		if err != nil {
+			responses.ERROR(w, http.StatusInternalServerError, err)
+			return
+		}
+	}
+
+	addressResponse := &responses.AddressSmartIDResponse{}
+	responses.TranslateSmartAddressResponse(addressReceived, addressResponse)
+
+	responses.JSON(w, http.StatusOK, addressResponse)
+}
+
+// GetPackageRecipientAddressBySmartID retrieves a recipient's package address using a customer's SmartID
+func (server *Server) GetPackageRecipientAddressBySmartID(w http.ResponseWriter, r *http.Request) {
+	reqUID, permission, err := auth.ExtractAPIUserTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	reqUser := models.APIUser{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	hasPermission := models.FullAddressPermissions(reqUser.Permission)
+
+	if !hasPermission || string(reqUser.Permission) != permission {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	vars := mux.Vars(r)
+	smartID := sanitizeSmartID(strings.ToUpper(vars["smart_id"]))
+	tracking := null.StringFromPtr(nil)
+	trackingQuery, ok := vars["tracking"]
+	if ok {
+		tracking = null.StringFrom(trackingQuery)
+	}
+	description := null.StringFromPtr(nil)
+	descriptionQuery, ok := vars["tracking"]
+	if ok {
+		description = null.StringFrom(descriptionQuery)
+	}
+	date, err := time.Parse("2006-01-02", vars["date"])
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+
+	user := models.User{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", smartID).Take(&user).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find smartID: %s", smartID))
+		return
+	}
+
+	address := models.AddressAssignment{}
+	addressReceived, err := address.FindPackageAddressWithSmartID(server.DB, user, date)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	newPackage := models.Package{
+		MailCarrierID: reqUID,
+		SenderID: uuid.NullUUID{
+			UUID:  user.ID,
+			Valid: true,
+		},
+		RecipientID: uuid.NullUUID{},
+		Tracking:    tracking,
+	}
+	savedPackage, err := newPackage.SavePackage(server.DB)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if tracking.Valid {
+		newPackageDescription := models.PackageDescription{
+			UserID:      user.ID,
+			PackageID:   savedPackage.ID,
+			Description: description,
+		}
+		err = newPackageDescription.SavePackageDescription(server.DB)
+		if err != nil {
+			responses.ERROR(w, http.StatusInternalServerError, err)
+			return
+		}
+	}
+
 	addressResponse := &responses.AddressSmartIDResponse{}
 	responses.TranslateSmartAddressResponse(addressReceived, addressResponse)
 
@@ -499,9 +735,30 @@ func (server *Server) GetPackageAddressBySmartID(w http.ResponseWriter, r *http.
 
 // GetPackageZipBySmartID retrieves a user's zip code using a customer's SmartID
 func (server *Server) GetPackageZipBySmartID(w http.ResponseWriter, r *http.Request) {
+	reqUID, permission, err := auth.ExtractAPIUserTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	reqUser := models.APIUser{}
+
+	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	hasPermission := models.ZipPermissions(reqUser.Permission)
+
+	if !hasPermission || string(reqUser.Permission) != permission {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
 
 	vars := mux.Vars(r)
-	smartID := vars["smart_id"]
+	smartID := sanitizeSmartID(strings.ToUpper(vars["smart_id"]))
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -509,20 +766,9 @@ func (server *Server) GetPackageZipBySmartID(w http.ResponseWriter, r *http.Requ
 	}
 	user := models.User{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", strings.ToUpper(smartID)).Take(&user).Error
-
-	reqUID, err := auth.ExtractTokenID(r)
+	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", smartID).Take(&user).Error
 	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
-		return
-	}
-	reqUser := models.User{}
-
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
-
-	if reqUser.Authority != models.AdminAuth && reqUser.Authority != models.MailerAuth && reqUser.Authority != models.RetailerAuth {
-		fmt.Print(reqUser.Authority)
-		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find smartID: %s", smartID))
 		return
 	}
 
@@ -552,7 +798,7 @@ func (server *Server) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//CHeck if the auth token is valid and  get the user id from it
-	uid, err := auth.ExtractTokenID(r)
+	uid, err := auth.ExtractUITokenID(r)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
@@ -627,7 +873,7 @@ func (server *Server) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Is this user authenticated?
-	uid, err := auth.ExtractTokenID(r)
+	uid, err := auth.ExtractUITokenID(r)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return

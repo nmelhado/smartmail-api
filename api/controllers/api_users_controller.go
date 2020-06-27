@@ -15,14 +15,14 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-// CreateUser creates a user and adds the user to the DB (typically a user and address are created simultaneously from the address_controller)
-func (server *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
+// CreateAPIUser creates an API user
+func (server *Server) CreateAPIUser(w http.ResponseWriter, r *http.Request) {
 	userResponse := responses.CreateUserResponse{}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 	}
-	user := models.User{}
+	user := models.APIUser{}
 	err = json.Unmarshal(body, &user)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
@@ -39,7 +39,7 @@ func (server *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	userCreated, err := user.SaveUser(server.DB)
+	userCreated, err := user.SaveAPIUser(server.DB)
 
 	if err != nil {
 
@@ -52,37 +52,12 @@ func (server *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusCreated, userResponse)
 }
 
-// GetContacts gets a user's contacts
-func (server *Server) GetContacts(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	uid := uuid.FromStringOrNil(vars["id"])
-	tokenID, err := auth.ExtractUITokenID(r)
-	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
-		return
-	}
-	if tokenID != uid {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
-		return
-	}
+// GetAPIUsers retrieves 100 users
+func (server *Server) GetAPIUsers(w http.ResponseWriter, r *http.Request) {
 
-	contacts, err := server.pullContacts(uid)
-	if err != nil {
-		responses.ERROR(w, http.StatusUnprocessableEntity, err)
-		return
-	}
+	user := models.APIUser{}
 
-	finalContacts := responses.Contacts{Contacts: contacts}
-
-	responses.JSON(w, http.StatusOK, finalContacts)
-}
-
-// GetUsers retrieves 100 users
-func (server *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
-
-	user := models.User{}
-
-	users, err := user.FindAllUsers(server.DB)
+	users, err := user.FindAllAPIUsers(server.DB)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
@@ -90,13 +65,13 @@ func (server *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, users)
 }
 
-// GetUser retrieves a single user through an ID passed as a URL param
-func (server *Server) GetUser(w http.ResponseWriter, r *http.Request) {
+// GetAPIUser retrieves a single user through an ID passed as a URL param
+func (server *Server) GetAPIUser(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	uid := uuid.FromStringOrNil(vars["id"])
-	user := models.User{}
-	userGotten, err := user.FindUserByID(server.DB, uid)
+	user := models.APIUser{}
+	userGotten, err := user.FindAPIUserByID(server.DB, uid)
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 		return
@@ -104,8 +79,8 @@ func (server *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, userGotten)
 }
 
-// UpdateUser updates a user's information
-func (server *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
+// UpdateAPIUser updates an API user's information
+func (server *Server) UpdateAPIUser(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	uid := uuid.FromStringOrNil(vars["id"])
@@ -114,7 +89,7 @@ func (server *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	user := models.User{}
+	user := models.APIUser{}
 	err = json.Unmarshal(body, &user)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
@@ -135,7 +110,7 @@ func (server *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	updatedUser, err := user.UpdateAUser(server.DB, uid)
+	updatedUser, err := user.UpdateAPIUser(server.DB, uid)
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
 		responses.ERROR(w, http.StatusInternalServerError, formattedError)
@@ -144,8 +119,8 @@ func (server *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, updatedUser)
 }
 
-// DeleteUser deletes a user and removes them from the DB
-func (server *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
+// DeleteAPIUser deletes an API user and removes them from the DB
+func (server *Server) DeleteAPIUser(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 
@@ -168,13 +143,4 @@ func (server *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Entity", fmt.Sprintf("%d", uid))
 	responses.JSON(w, http.StatusNoContent, "")
-}
-
-func (server *Server) pullContacts(uid uuid.UUID) (contacts []responses.Contact, err error) {
-	rawContacts, err := models.GetContacts(server.DB, uid)
-	if err != nil {
-		return
-	}
-	contacts = responses.TranslateContacts(rawContacts)
-	return
 }

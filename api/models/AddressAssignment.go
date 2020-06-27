@@ -11,7 +11,7 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
-// Status is an enum type used for AddressAssignment (valies cannot be added wothot altering the DB first!)
+// Status is an enum type used for AddressAssignment (values cannot be added wothot altering the DB first!)
 // refer to link for `Status` field: https://github.com/jinzhu/gorm/issues/1978
 type Status string
 
@@ -236,7 +236,7 @@ func (aa *AddressAssignment) FindPackageAddressWithSmartID(db *gorm.DB, user Use
 	return &address, nil
 }
 
-// FindAllActiveAddressesForUser retieves the last 100 active addresses a user has linked to their account. Used in UI to provide users currently active addresses
+// FindAllActiveAddressesForUser retrieves the last 100 active addresses a user has linked to their account. Used in UI to provide users currently active addresses
 func (aa *AddressAssignment) FindAllActiveAddressesForUser(db *gorm.DB, uid uuid.UUID) (*[]AddressAssignment, error) {
 	var err error
 	addresses := []AddressAssignment{}
@@ -248,7 +248,7 @@ func (aa *AddressAssignment) FindAllActiveAddressesForUser(db *gorm.DB, uid uuid
 	return &addresses, nil
 }
 
-// FindAllAddressesForUser retieves the last 100 addresses a user has linked to their account. Used in UI to provide address history
+// FindAllAddressesForUser retrieves the last 100 addresses a user has linked to their account. Used in UI to provide address history
 func (aa *AddressAssignment) FindAllAddressesForUser(db *gorm.DB, uid uuid.UUID) (*[]AddressAssignment, error) {
 	var err error
 	addresses := []AddressAssignment{}

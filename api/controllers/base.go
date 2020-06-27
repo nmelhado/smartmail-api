@@ -42,7 +42,7 @@ func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, C
 		fmt.Printf("Connected to the %s database\n", connectType)
 	}
 
-	server.DB.Debug().AutoMigrate(&models.User{}, &models.Address{}, &models.AddressAssignment{}, &models.Contact{}) //database migration
+	server.DB.Debug().AutoMigrate(&models.User{}, &models.Address{}, &models.AddressAssignment{}, &models.Contact{}, &models.APIUser{}, &models.Package{}, &models.PackageDescription{}) //database migration
 
 	server.Router = mux.NewRouter()
 

@@ -33,6 +33,7 @@ func (c *Contact) SaveContacts(db *gorm.DB, userID uuid.UUID, contactID uuid.UUI
 	if err != nil {
 		return err
 	}
+
 	secondContact := Contact{}
 	err = db.Debug().Model(&Contact{}).Where("user_id = ? AND contact_id = ?", contactID, userID).Attrs(Contact{UserID: contactID, ContactID: userID, CreatedAt: time.Now()}).FirstOrCreate(&secondContact).Error
 	if err != nil {

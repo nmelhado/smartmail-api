@@ -79,28 +79,6 @@ func (a *Address) SaveAddress(db *gorm.DB) (*Address, error) {
 	return a, nil
 }
 
-// Below still needs revision
-
-// Below function may be unnecessary (comment it out, when back at a computer, for now)
-
-// func (p *Address) FindAllPosts(db *gorm.DB) (*[]Post, error) {
-// 	var err error
-// 	posts := []Post{}
-// 	err = db.Debug().Model(&Post{}).Limit(100).Find(&posts).Error
-// 	if err != nil {
-// 		return &[]Post{}, err
-// 	}
-// 	if len(posts) > 0 {
-// 		for i, _ := range posts {
-// 			err := db.Debug().Model(&User{}).Where("id = ?", posts[i].AuthorID).Take(&posts[i].Author).Error
-// 			if err != nil {
-// 				return &[]Post{}, err
-// 			}
-// 		}
-// 	}
-// 	return &posts, nil
-// }
-
 // FindAddressByID find an address using its ID value
 func (a *Address) FindAddressByID(db *gorm.DB, aid uint64) (*Address, error) {
 	var err error

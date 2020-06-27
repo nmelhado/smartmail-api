@@ -38,7 +38,7 @@ func (server *Server) AddContact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid, err := auth.ExtractTokenID(r)
+	uid, err := auth.ExtractUITokenID(r)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return

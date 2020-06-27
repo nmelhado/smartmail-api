@@ -65,27 +65,28 @@ func (server *Server) Login(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, response)
 }
 
-// Token validates a user and then calls SignIn
+// Token validates a API user and then returns a token
 func (server *Server) Token(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	user := models.User{}
-	err = json.Unmarshal(body, &user)
+	aUser := models.APIUser{}
+	err = json.Unmarshal(body, &aUser)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	user.Prepare()
-	err = user.Validate("login")
+	aUser.Prepare()
+	err = aUser.Validate("login")
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	token, _, err := server.SignIn(user.Email, user.Password)
+
+	token, err := server.SignInAPIUser(aUser.Username, aUser.Password)
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
 		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)
@@ -188,7 +189,7 @@ func (server *Server) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, response)
 }
 
-// SignIn retrieves a token that is used for API endpoints
+// SignIn retrieves an auth token that is used for UI originating API endpoints
 func (server *Server) SignIn(email, password string) (string, models.User, error) {
 
 	var err error
@@ -203,8 +204,27 @@ func (server *Server) SignIn(email, password string) (string, models.User, error
 	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
 		return "", models.User{}, err
 	}
-	token, err := auth.CreateToken(user.ID)
+	token, err := auth.CreateToken(user.ID, "ui")
 	return token, user, err
+}
+
+// SignInAPIUser retrieves an auth token that is used for API endpoints
+func (server *Server) SignInAPIUser(username, password string) (string, error) {
+
+	var err error
+
+	aUser := models.APIUser{}
+
+	err = server.DB.Debug().Model(models.APIUser{}).Where("username = ?", username).Take(&aUser).Error
+	if err != nil {
+		return "", errors.New("User Not Found")
+	}
+	err = models.VerifyPassword(aUser.Password, password)
+	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
+		return "", err
+	}
+	token, err := auth.CreateToken(aUser.ID, string(aUser.Permission))
+	return token, err
 }
 
 // RetrieveAllAddresses retrieves all non deleted addresses for a user

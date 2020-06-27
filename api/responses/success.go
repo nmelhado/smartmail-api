@@ -128,10 +128,45 @@ type Contacts struct {
 
 // Contact is the single contact response for a contact request
 type Contact struct {
-	Name    string `json:"name"`
-	SmartID string `json:"smart_id"`
-	Phone   string `json:"phone"`
-	Email   string `json:"email"`
+	Name    string    `json:"name"`
+	SmartID string    `json:"smart_id"`
+	Phone   string    `json:"phone"`
+	Email   string    `json:"email"`
+	AddedOn time.Time `json:"added_on"`
+}
+
+// PackagesResponse is the array of open packages and delivered packages response for a packages request
+type PackagesResponse struct {
+	OpenPackages      []SinglePackage `json:"open_packages"`
+	DeliveredPackages []SinglePackage `json:"delivered_packages"`
+	Success           bool            `json:"success"`
+}
+
+// SinglePackage is the single package response for a package request
+type SinglePackage struct {
+	PackageID        uint64      `json:"id"` // actually the package description ID
+	MailCarrier      string      `json:"mail_carrier"`
+	SenderSmartID    null.String `json:"sender_smart_id"`
+	SenderName       null.String `json:"sender_name"`
+	RecipientSmartID null.String `json:"recipient_smart_id"`
+	RecipientName    null.String `json:"recipient_name"`
+	Tracking         string      `json:"tracking"`
+	Description      null.String `json:"description"`
+	DeliveredOn      null.Time   `json:"delivered_on"`
+}
+
+// UpdatePackageResponse is the response for an update package request
+type UpdatePackageResponse struct {
+	Success   bool   `json:"success"`
+	Tracking  string `json:"tracking"`
+	Delivered bool   `json:"delivered"`
+}
+
+// UpdatePackageDescriptionResponse is the response for an update package request
+type UpdatePackageDescriptionResponse struct {
+	Success     bool        `json:"success"`
+	ID          uint64      `json:"id"`
+	Description null.String `json:"description"`
 }
 
 // TranslateAddressResponse converts an array of AddressAssignments into an array of AddressResponse
@@ -282,5 +317,44 @@ func TranslateContact(originalContact models.Contact) (contact Contact) {
 	contact.SmartID = originalContact.Contact.SmartID
 	contact.Email = originalContact.Contact.Email
 	contact.Phone = originalContact.Contact.Phone
+	contact.AddedOn = originalContact.CreatedAt
+	return
+}
+
+// TranslatePackagesResponse converts an array of packages into an array of package responses
+func TranslatePackagesResponse(openPackages []models.PackageDescription, deliveredPackages []models.PackageDescription) (userPackages PackagesResponse) {
+	// translate open packages
+	for _, singlePackage := range openPackages {
+		nextPackage := TranslatePackage(singlePackage)
+		userPackages.OpenPackages = append(userPackages.OpenPackages, nextPackage)
+	}
+
+	// translate delivered packages
+	for _, singlePackage := range deliveredPackages {
+		nextPackage := TranslatePackage(singlePackage)
+		userPackages.DeliveredPackages = append(userPackages.DeliveredPackages, nextPackage)
+	}
+
+	userPackages.Success = true
+
+	return
+}
+
+// TranslatePackage converts a single package into a package response
+func TranslatePackage(originalPackage models.PackageDescription) (newPackage SinglePackage) {
+	newPackage.MailCarrier = originalPackage.Package.MailCarrier.Name
+	if originalPackage.Package.SenderID.Valid {
+		newPackage.SenderSmartID = null.StringFrom(originalPackage.Package.Sender.SmartID)
+		newPackage.SenderName = null.StringFrom(originalPackage.Package.Sender.FirstName + " " + originalPackage.Package.Sender.LastName)
+	}
+	if originalPackage.Package.RecipientID.Valid {
+		newPackage.RecipientSmartID = null.StringFrom(originalPackage.Package.Recipient.SmartID)
+		newPackage.RecipientName = null.StringFrom(originalPackage.Package.Recipient.FirstName + " " + originalPackage.Package.Recipient.LastName)
+	}
+	newPackage.Tracking = originalPackage.Package.Tracking.String
+	if originalPackage.Package.Delivered {
+		newPackage.DeliveredOn = originalPackage.Package.DeliveredOn
+	}
+	newPackage.Description = originalPackage.Description
 	return
 }
