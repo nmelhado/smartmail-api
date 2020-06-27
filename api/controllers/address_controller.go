@@ -458,7 +458,7 @@ func (server *Server) GetPackageAddressToAndFromBySmartID(w http.ResponseWriter,
 		tracking = null.StringFrom(trackingQuery)
 	}
 	description := null.StringFromPtr(nil)
-	descriptionQuery, ok := vars["tracking"]
+	descriptionQuery, ok := vars["description"]
 	if ok {
 		description = null.StringFrom(descriptionQuery)
 	}
@@ -583,7 +583,7 @@ func (server *Server) GetPackageSenderAddressBySmartID(w http.ResponseWriter, r 
 		tracking = null.StringFrom(trackingQuery)
 	}
 	description := null.StringFromPtr(nil)
-	descriptionQuery, ok := vars["tracking"]
+	descriptionQuery, ok := vars["description"]
 	if ok {
 		description = null.StringFrom(descriptionQuery)
 	}
@@ -674,7 +674,7 @@ func (server *Server) GetPackageRecipientAddressBySmartID(w http.ResponseWriter,
 		tracking = null.StringFrom(trackingQuery)
 	}
 	description := null.StringFromPtr(nil)
-	descriptionQuery, ok := vars["tracking"]
+	descriptionQuery, ok := vars["description"]
 	if ok {
 		description = null.StringFrom(descriptionQuery)
 	}
