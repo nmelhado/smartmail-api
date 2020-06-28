@@ -134,7 +134,7 @@ func (server *Server) UpdatePackageDescription(w http.ResponseWriter, r *http.Re
 
 	packageDescriptionModel := models.PackageDescription{}
 
-	updatedPackage, err := packageDescriptionModel.UpdatePackageDescription(server.DB, packageToUpdate.UserID, packageToUpdate.PackageID, packageToUpdate.Description)
+	updatedPackage, err := packageDescriptionModel.UpdatePackageDescription(server.DB, packageToUpdate.PackageID, packageToUpdate.Description)
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
 		responses.ERROR(w, http.StatusUnprocessableEntity, formattedError)

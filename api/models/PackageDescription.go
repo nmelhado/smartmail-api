@@ -41,10 +41,10 @@ func (pd *PackageDescription) SavePackageDescription(db *gorm.DB) error {
 }
 
 // UpdatePackageDescription is used to update the delivered status
-func (pd *PackageDescription) UpdatePackageDescription(db *gorm.DB, uid uuid.UUID, packageID uint64, description null.String) (*PackageDescription, error) {
+func (pd *PackageDescription) UpdatePackageDescription(db *gorm.DB, ID uint64, description null.String) (*PackageDescription, error) {
 
 	var err error
-	err = db.Debug().Model(&PackageDescription{}).Where("user_id = ? AND package_id = ?", uid, packageID).Updates(PackageDescription{Description: description, UpdatedAt: time.Now()}).Error
+	err = db.Debug().Model(&PackageDescription{}).Where("id = ?", ID).Updates(PackageDescription{Description: description, UpdatedAt: time.Now()}).Error
 	if err != nil {
 		return &PackageDescription{}, err
 	}
@@ -55,7 +55,7 @@ func (pd *PackageDescription) UpdatePackageDescription(db *gorm.DB, uid uuid.UUI
 func (pd *PackageDescription) FindAllPackageDescriptionsForUser(db *gorm.DB, uid uuid.UUID) (*[]PackageDescription, error) {
 	var err error
 	packages := []PackageDescription{}
-	err = db.Debug().Set("gorm:auto_preload", true).Model(&PackageDescription{}).Where("user_id = ?", uid).Limit(100).Find(&packages).Error
+	err = db.Debug().Set("gorm:auto_preload", true).Order("created_at asc").Model(&PackageDescription{}).Where("user_id = ?", uid).Limit(100).Find(&packages).Error
 	if err != nil {
 		return &[]PackageDescription{}, err
 	}

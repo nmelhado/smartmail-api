@@ -342,6 +342,7 @@ func TranslatePackagesResponse(openPackages []models.PackageDescription, deliver
 
 // TranslatePackage converts a single package into a package response
 func TranslatePackage(originalPackage models.PackageDescription) (newPackage SinglePackage) {
+	newPackage.PackageID = originalPackage.ID
 	newPackage.MailCarrier = originalPackage.Package.MailCarrier.Name
 	if originalPackage.Package.SenderID.Valid {
 		newPackage.SenderSmartID = null.StringFrom(originalPackage.Package.Sender.SmartID)
