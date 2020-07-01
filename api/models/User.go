@@ -12,6 +12,7 @@ import (
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/guregu/null.v3"
 )
 
 type authority string
@@ -20,6 +21,7 @@ type authority string
 postgres command to create enum:
 CREATE TYPE authority AS ENUM (
 	'user',
+	'retailer',
 	'admin',
 	'engineer');
 */
@@ -45,16 +47,19 @@ func (a authority) Value() (driver.Value, error) {
 
 // User is the DB and json structure for a user
 type User struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
-	SmartID   string    `gorm:"size:8;not null;unique;unique_index:ix_smart_id" json:"smart_id"`
-	Email     string    `gorm:"size:100;not null;unique" json:"email"`
-	FirstName string    `gorm:"size:30;not null;" json:"first_name"`
-	LastName  string    `gorm:"size:30;not null;" json:"last_name"`
-	Phone     string    `gorm:"size:30;not null;" json:"phone"`
-	Authority authority `sql:"type:authority" json:"authority"`
-	Password  string    `gorm:"size:100;not null;" json:"password"`
-	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID          uuid.UUID   `gorm:"type:uuid;primary_key" json:"id"`
+	SmartID     string      `gorm:"size:8;not null;unique;unique_index:ix_smart_id" json:"smart_id"`
+	Email       string      `gorm:"size:100;not null;unique" json:"email"`
+	FirstName   string      `gorm:"size:30;not null;" json:"first_name"`
+	LastName    string      `gorm:"size:30;not null;" json:"last_name"`
+	Phone       string      `gorm:"size:30;not null;" json:"phone"`
+	Authority   authority   `sql:"type:authority" json:"authority"`
+	Password    string      `gorm:"size:100;not null;" json:"password"`
+	SmallLogo   null.String `gorm:"size:100;" json:"small_logo"`
+	LargeLogo   null.String `gorm:"size:100;" json:"large_logo"`
+	RedirectURL null.String `gorm:"size:100;" json:"redirect_url"`
+	CreatedAt   time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt   time.Time   `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 // BeforeCreate will set a UUID rather than numeric ID.
@@ -91,6 +96,9 @@ func (u *User) Prepare() {
 	u.LastName = html.EscapeString(strings.TrimSpace(u.LastName))
 	u.Email = html.EscapeString(strings.ToLower(strings.TrimSpace(u.Email)))
 	u.Phone = html.EscapeString(strings.TrimSpace(u.Phone))
+	u.LargeLogo = null.StringFrom(html.EscapeString(strings.TrimSpace(u.LargeLogo.String)))
+	u.SmallLogo = null.StringFrom(html.EscapeString(strings.TrimSpace(u.SmallLogo.String)))
+	u.RedirectURL = null.StringFrom(html.EscapeString(strings.TrimSpace(u.RedirectURL.String)))
 	u.Authority = UserAuth
 	u.CreatedAt = time.Now()
 	u.UpdatedAt = time.Now()
@@ -199,12 +207,15 @@ func (u *User) UpdateAUser(db *gorm.DB, uid uuid.UUID) (*User, error) {
 	}
 	db = db.Debug().Model(&User{}).Where("id = ?", uid).Take(&User{}).UpdateColumns(
 		map[string]interface{}{
-			"password":   u.Password,
-			"first_name": u.FirstName,
-			"last_name":  u.LastName,
-			"phone":      u.Phone,
-			"email":      u.Email,
-			"update_at":  time.Now(),
+			"password":     u.Password,
+			"first_name":   u.FirstName,
+			"last_name":    u.LastName,
+			"phone":        u.Phone,
+			"email":        u.Email,
+			"large_logo":   u.LargeLogo,
+			"small_logo":   u.SmallLogo,
+			"redirect_url": u.RedirectURL,
+			"update_at":    time.Now(),
 		},
 	)
 	if db.Error != nil {

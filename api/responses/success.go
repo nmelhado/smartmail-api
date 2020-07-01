@@ -144,15 +144,31 @@ type PackagesResponse struct {
 
 // SinglePackage is the single package response for a package request
 type SinglePackage struct {
-	PackageID        uint64      `json:"id"` // actually the package description ID
-	MailCarrier      string      `json:"mail_carrier"`
-	SenderSmartID    null.String `json:"sender_smart_id"`
-	SenderName       null.String `json:"sender_name"`
-	RecipientSmartID null.String `json:"recipient_smart_id"`
-	RecipientName    null.String `json:"recipient_name"`
-	Tracking         string      `json:"tracking"`
-	Description      null.String `json:"description"`
-	DeliveredOn      null.Time   `json:"delivered_on"`
+	PackageID          uint64             `json:"id"` // actually the package description ID
+	MailCarrier        string             `json:"mail_carrier"`
+	Sender             SenderRecipient    `json:"sender"`
+	Recipient          SenderRecipient    `json:"recipient"`
+	Tracking           string             `json:"tracking"`
+	EstimatedDelivery  null.Time          `json:"estimatedDelivery"`
+	DeliveredOn        null.Time          `json:"delivered_on"`
+	PackageDescription PackageDescription `json:"package_description"`
+}
+
+// SenderRecipient contains information about the sender or recipient
+type SenderRecipient struct {
+	Name        null.String `json:"name"`
+	SmartID     null.String `json:"smart_id"`
+	LargeLogo   null.String `json:"large_logo"`
+	SmallLogo   null.String `json:"small_logo"`
+	RedirectURL null.String `json:"redirect_url"`
+	Role        null.String `json:"role"`
+}
+
+// PackageDescription contains additional package information for a package request
+type PackageDescription struct {
+	Contents   null.String `json:"contents"`
+	OrderLink  null.String `json:"order_link"`
+	OrderImage null.String `json:"order_image"`
 }
 
 // UpdatePackageResponse is the response for an update package request
@@ -164,9 +180,10 @@ type UpdatePackageResponse struct {
 
 // UpdatePackageDescriptionResponse is the response for an update package request
 type UpdatePackageDescriptionResponse struct {
-	Success     bool        `json:"success"`
-	ID          uint64      `json:"id"`
-	Description null.String `json:"description"`
+	Success    bool        `json:"success"`
+	Contents   null.String `json:"contents"`
+	OrderLink  null.String `json:"order_link"`
+	OrderImage null.String `json:"order_image"`
 }
 
 // TranslateAddressResponse converts an array of AddressAssignments into an array of AddressResponse
@@ -322,7 +339,7 @@ func TranslateContact(originalContact models.Contact) (contact Contact) {
 }
 
 // TranslatePackagesResponse converts an array of packages into an array of package responses
-func TranslatePackagesResponse(openPackages []models.PackageDescription, deliveredPackages []models.PackageDescription) (userPackages PackagesResponse) {
+func TranslatePackagesResponse(openPackages []models.Package, deliveredPackages []models.Package) (userPackages PackagesResponse) {
 	// translate open packages
 	for _, singlePackage := range openPackages {
 		nextPackage := TranslatePackage(singlePackage)
@@ -341,21 +358,39 @@ func TranslatePackagesResponse(openPackages []models.PackageDescription, deliver
 }
 
 // TranslatePackage converts a single package into a package response
-func TranslatePackage(originalPackage models.PackageDescription) (newPackage SinglePackage) {
-	newPackage.PackageID = originalPackage.ID
-	newPackage.MailCarrier = originalPackage.Package.MailCarrier.Name
-	if originalPackage.Package.SenderID.Valid {
-		newPackage.SenderSmartID = null.StringFrom(originalPackage.Package.Sender.SmartID)
-		newPackage.SenderName = null.StringFrom(originalPackage.Package.Sender.FirstName + " " + originalPackage.Package.Sender.LastName)
+func TranslatePackage(originalPackage models.Package) (newPackage SinglePackage) {
+	newPackage.MailCarrier = originalPackage.MailCarrier.Name
+	if originalPackage.SenderID.Valid {
+		newPackage.Sender = SenderRecipient{
+			Name:        null.StringFrom(originalPackage.Sender.FirstName + " " + originalPackage.Sender.LastName),
+			SmartID:     null.StringFrom(originalPackage.Sender.SmartID),
+			LargeLogo:   originalPackage.Sender.LargeLogo,
+			SmallLogo:   originalPackage.Sender.SmallLogo,
+			RedirectURL: originalPackage.Sender.RedirectURL,
+			Role:        null.StringFrom(string(originalPackage.Sender.Authority)),
+		}
 	}
-	if originalPackage.Package.RecipientID.Valid {
-		newPackage.RecipientSmartID = null.StringFrom(originalPackage.Package.Recipient.SmartID)
-		newPackage.RecipientName = null.StringFrom(originalPackage.Package.Recipient.FirstName + " " + originalPackage.Package.Recipient.LastName)
+	if originalPackage.RecipientID.Valid {
+		newPackage.Recipient = SenderRecipient{
+			Name:        null.StringFrom(originalPackage.Recipient.FirstName + " " + originalPackage.Recipient.LastName),
+			SmartID:     null.StringFrom(originalPackage.Recipient.SmartID),
+			LargeLogo:   originalPackage.Recipient.LargeLogo,
+			SmallLogo:   originalPackage.Recipient.SmallLogo,
+			RedirectURL: originalPackage.Recipient.RedirectURL,
+			Role:        null.StringFrom(string(originalPackage.Recipient.Authority)),
+		}
 	}
-	newPackage.Tracking = originalPackage.Package.Tracking.String
-	if originalPackage.Package.Delivered {
-		newPackage.DeliveredOn = originalPackage.Package.DeliveredOn
+	newPackage.Tracking = originalPackage.Tracking.String
+	if originalPackage.Delivered {
+		newPackage.DeliveredOn = originalPackage.DeliveredOn
 	}
-	newPackage.Description = originalPackage.Description
+	newPackage.EstimatedDelivery = originalPackage.EstimatedDelivery
+	if originalPackage.PackageDescriptionID > 0 {
+		newPackage.PackageDescription = PackageDescription{
+			Contents:   originalPackage.PackageDescription.Contents,
+			OrderImage: originalPackage.PackageDescription.OrderImage,
+			OrderLink:  originalPackage.PackageDescription.OrderLink,
+		}
+	}
 	return
 }

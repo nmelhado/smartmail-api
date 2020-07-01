@@ -50,17 +50,20 @@ func (p Permission) Value() (driver.Value, error) {
 
 // APIUser is the DB and json structure for an API user
 type APIUser struct {
-	ID         uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
-	Username   string     `gorm:"size:100;not null;unique" json:"username"`
-	Email      string     `gorm:"size:100;not null;unique" json:"email"`
-	Name       string     `gorm:"size:30;not null;" json:"name"`
-	Phone      string     `gorm:"size:30;not null;" json:"phone"`
-	Permission Permission `gorm:"default:'none'" sql:"type:api_permission" json:"permission"`
-	Password   string     `gorm:"size:100;not null;" json:"password"`
-	CreatedAt  time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt  time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID              uuid.UUID     `gorm:"type:uuid;primary_key" json:"id"`
+	Username        string        `gorm:"size:100;not null;unique" json:"username"`
+	Email           string        `gorm:"size:100;not null;unique" json:"email"`
+	Name            string        `gorm:"size:30;not null;" json:"name"`
+	Phone           string        `gorm:"size:30;not null;" json:"phone"`
+	SmartmailUser   User          `json:"smartmail_user"`
+	SmartmailUserID uuid.NullUUID `gorm:"type:uuid;" sql:"type:uuid REFERENCES users(id)" json:"smartmail_user_id"`
+	Permission      Permission    `gorm:"default:'none'" sql:"type:api_permission" json:"permission"`
+	Password        string        `gorm:"size:100;not null;" json:"password"`
+	CreatedAt       time.Time     `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt       time.Time     `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
+// FullAddressPermissions returns true if the provided permission level is adequate to access address full information
 func FullAddressPermissions(permission Permission) bool {
 	switch permission {
 	case
@@ -72,12 +75,25 @@ func FullAddressPermissions(permission Permission) bool {
 	return false
 }
 
+// ZipPermissions returns true if the provided permission level is adequate to access zip code information
 func ZipPermissions(permission Permission) bool {
 	switch permission {
 	case
 		AdminPermission,
 		EngineerPermission,
 		MailCarrierPermission,
+		RetailerPermission:
+		return true
+	}
+	return false
+}
+
+// RetailPermissions returns true if the provided permission level is adequate to access zip code information
+func RetailPermissions(permission Permission) bool {
+	switch permission {
+	case
+		AdminPermission,
+		EngineerPermission,
 		RetailerPermission:
 		return true
 	}
@@ -194,7 +210,7 @@ func (au *APIUser) FindAllAPIUsers(db *gorm.DB) (*[]APIUser, error) {
 // FindAPIUserByID retrieves the data for an API user by using their ID
 func (au *APIUser) FindAPIUserByID(db *gorm.DB, uid uuid.UUID) (*APIUser, error) {
 	var err error
-	err = db.Debug().Model(APIUser{}).Where("id = ?", uid).Take(&au).Error
+	err = db.Debug().Set("gorm:auto_preload", true).Model(APIUser{}).Where("id = ?", uid).Take(&au).Error
 	if err != nil {
 		return &APIUser{}, err
 	}

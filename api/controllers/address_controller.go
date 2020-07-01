@@ -246,7 +246,7 @@ func (server *Server) GetMailingAddressToAndFromBySmartID(w http.ResponseWriter,
 
 	reqUser := models.APIUser{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	err = server.DB.Debug().Model(models.APIUser{}).Where("id = ?", reqUID).Take(&reqUser).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
@@ -323,7 +323,7 @@ func (server *Server) GetMailingAddressBySmartID(w http.ResponseWriter, r *http.
 
 	reqUser := models.APIUser{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	err = server.DB.Debug().Model(models.APIUser{}).Where("id = ?", reqUID).Take(&reqUser).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
@@ -378,7 +378,7 @@ func (server *Server) GetMailingZipBySmartID(w http.ResponseWriter, r *http.Requ
 
 	reqUser := models.APIUser{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	err = server.DB.Debug().Model(models.APIUser{}).Where("id = ?", reqUID).Take(&reqUser).Error
 	if err != nil {
 		fmt.Print("\nUnauthorized\n")
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
@@ -435,7 +435,7 @@ func (server *Server) GetPackageAddressToAndFromBySmartID(w http.ResponseWriter,
 
 	reqUser := models.APIUser{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	err = server.DB.Debug().Model(models.APIUser{}).Where("id = ?", reqUID).Take(&reqUser).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
@@ -457,11 +457,6 @@ func (server *Server) GetPackageAddressToAndFromBySmartID(w http.ResponseWriter,
 	if ok {
 		tracking = null.StringFrom(trackingQuery)
 	}
-	description := null.StringFromPtr(nil)
-	descriptionQuery, ok := vars["description"]
-	if ok {
-		description = null.StringFrom(descriptionQuery)
-	}
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -480,6 +475,13 @@ func (server *Server) GetPackageAddressToAndFromBySmartID(w http.ResponseWriter,
 	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", recipientSmartID).Take(&recipient).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find recipient with smartID: %s", recipientSmartID))
+		return
+	}
+
+	packageDescription := &models.PackageDescription{}
+	packageDescription, err = packageDescription.SavePackageDescription(server.DB)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -514,35 +516,13 @@ func (server *Server) GetPackageAddressToAndFromBySmartID(w http.ResponseWriter,
 			UUID:  recipient.ID,
 			Valid: true,
 		},
-		Tracking: tracking,
+		Tracking:             tracking,
+		PackageDescriptionID: packageDescription.ID,
 	}
-	savedPackage, err := newPackage.SavePackage(server.DB)
+	err = newPackage.SavePackage(server.DB)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
-	}
-
-	if tracking.Valid {
-		newPackageDescriptionSender := models.PackageDescription{
-			UserID:      sender.ID,
-			PackageID:   savedPackage.ID,
-			Description: description,
-		}
-		err = newPackageDescriptionSender.SavePackageDescription(server.DB)
-		if err != nil {
-			responses.ERROR(w, http.StatusInternalServerError, err)
-			return
-		}
-		newPackageDescriptionRecipient := models.PackageDescription{
-			UserID:      recipient.ID,
-			PackageID:   savedPackage.ID,
-			Description: description,
-		}
-		err = newPackageDescriptionRecipient.SavePackageDescription(server.DB)
-		if err != nil {
-			responses.ERROR(w, http.StatusInternalServerError, err)
-			return
-		}
 	}
 
 	addressResponse := &responses.ToAndFromAddressSmartIDResponse{}
@@ -561,7 +541,7 @@ func (server *Server) GetPackageSenderAddressBySmartID(w http.ResponseWriter, r 
 
 	reqUser := models.APIUser{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	err = server.DB.Debug().Model(models.APIUser{}).Where("id = ?", reqUID).Take(&reqUser).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
@@ -582,11 +562,6 @@ func (server *Server) GetPackageSenderAddressBySmartID(w http.ResponseWriter, r 
 	if ok {
 		tracking = null.StringFrom(trackingQuery)
 	}
-	description := null.StringFromPtr(nil)
-	descriptionQuery, ok := vars["description"]
-	if ok {
-		description = null.StringFrom(descriptionQuery)
-	}
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -598,6 +573,13 @@ func (server *Server) GetPackageSenderAddressBySmartID(w http.ResponseWriter, r 
 	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", smartID).Take(&user).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find smartID: %s", smartID))
+		return
+	}
+
+	packageDescription := &models.PackageDescription{}
+	packageDescription, err = packageDescription.SavePackageDescription(server.DB)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -614,26 +596,14 @@ func (server *Server) GetPackageSenderAddressBySmartID(w http.ResponseWriter, r 
 			UUID:  user.ID,
 			Valid: true,
 		},
-		RecipientID: uuid.NullUUID{},
-		Tracking:    tracking,
+		RecipientID:          uuid.NullUUID{},
+		Tracking:             tracking,
+		PackageDescriptionID: packageDescription.ID,
 	}
-	savedPackage, err := newPackage.SavePackage(server.DB)
+	err = newPackage.SavePackage(server.DB)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
-	}
-
-	if tracking.Valid {
-		newPackageDescription := models.PackageDescription{
-			UserID:      user.ID,
-			PackageID:   savedPackage.ID,
-			Description: description,
-		}
-		err = newPackageDescription.SavePackageDescription(server.DB)
-		if err != nil {
-			responses.ERROR(w, http.StatusInternalServerError, err)
-			return
-		}
 	}
 
 	addressResponse := &responses.AddressSmartIDResponse{}
@@ -652,7 +622,7 @@ func (server *Server) GetPackageRecipientAddressBySmartID(w http.ResponseWriter,
 
 	reqUser := models.APIUser{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	err = server.DB.Debug().Model(models.APIUser{}).Where("id = ?", reqUID).Take(&reqUser).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
@@ -673,11 +643,6 @@ func (server *Server) GetPackageRecipientAddressBySmartID(w http.ResponseWriter,
 	if ok {
 		tracking = null.StringFrom(trackingQuery)
 	}
-	description := null.StringFromPtr(nil)
-	descriptionQuery, ok := vars["description"]
-	if ok {
-		description = null.StringFrom(descriptionQuery)
-	}
 	date, err := time.Parse("2006-01-02", vars["date"])
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -689,6 +654,13 @@ func (server *Server) GetPackageRecipientAddressBySmartID(w http.ResponseWriter,
 	err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", smartID).Take(&user).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find smartID: %s", smartID))
+		return
+	}
+
+	packageDescription := &models.PackageDescription{}
+	packageDescription, err = packageDescription.SavePackageDescription(server.DB)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -705,26 +677,14 @@ func (server *Server) GetPackageRecipientAddressBySmartID(w http.ResponseWriter,
 			UUID:  user.ID,
 			Valid: true,
 		},
-		RecipientID: uuid.NullUUID{},
-		Tracking:    tracking,
+		RecipientID:          uuid.NullUUID{},
+		Tracking:             tracking,
+		PackageDescriptionID: packageDescription.ID,
 	}
-	savedPackage, err := newPackage.SavePackage(server.DB)
+	err = newPackage.SavePackage(server.DB)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
-	}
-
-	if tracking.Valid {
-		newPackageDescription := models.PackageDescription{
-			UserID:      user.ID,
-			PackageID:   savedPackage.ID,
-			Description: description,
-		}
-		err = newPackageDescription.SavePackageDescription(server.DB)
-		if err != nil {
-			responses.ERROR(w, http.StatusInternalServerError, err)
-			return
-		}
 	}
 
 	addressResponse := &responses.AddressSmartIDResponse{}
@@ -743,7 +703,7 @@ func (server *Server) GetPackageZipBySmartID(w http.ResponseWriter, r *http.Requ
 
 	reqUser := models.APIUser{}
 
-	err = server.DB.Debug().Model(models.User{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	err = server.DB.Debug().Model(models.APIUser{}).Where("id = ?", reqUID).Take(&reqUser).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
