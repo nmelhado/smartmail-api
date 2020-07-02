@@ -21,7 +21,8 @@ func (s *Server) initializeRoutes() {
 	s.Router.HandleFunc("/signup", middlewares.SetMiddlewareJSON(s.CreateUserAndAddress)).Methods("POST")
 
 	// Contacts route
-	s.Router.HandleFunc("/contacts/{id}", middlewares.SetMiddlewareJSON(s.GetContacts)).Methods("GET")
+	s.Router.HandleFunc("/contacts/{id}", middlewares.SetMiddlewareJSON(s.GetContacts)).Queries("limit", "{limit}", "page", "{page}", "sort", "{sort}", "search", "{search}").Methods("GET")
+	s.Router.HandleFunc("/contacts/{id}", middlewares.SetMiddlewareJSON(s.GetContacts)).Queries("limit", "{limit}", "page", "{page}", "sort", "{sort}").Methods("GET")
 	s.Router.HandleFunc("/contacts", middlewares.SetMiddlewareJSON(s.AddContact)).Methods("POST")
 
 	// API Users routes
@@ -42,7 +43,6 @@ func (s *Server) initializeRoutes() {
 	s.Router.HandleFunc("/addresses/mail/{sender_smart_id}/{recipient_smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetMailingAddressToAndFromBySmartID)).Methods("GET")
 
 	// Package addresses sender and recipient routes
-	s.Router.HandleFunc("/addresses/package/{sender_smart_id}/{recipient_smart_id}/{date}/{tracking}", middlewares.SetMiddlewareJSON(s.GetPackageAddressToAndFromBySmartID)).Queries("description", "{description}").Methods("GET")
 	s.Router.HandleFunc("/addresses/package/{sender_smart_id}/{recipient_smart_id}/{date}/{tracking}", middlewares.SetMiddlewareJSON(s.GetPackageAddressToAndFromBySmartID)).Methods("GET")
 	s.Router.HandleFunc("/addresses/package/{sender_smart_id}/{recipient_smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetPackageAddressToAndFromBySmartID)).Methods("GET")
 
@@ -54,10 +54,8 @@ func (s *Server) initializeRoutes() {
 	s.Router.HandleFunc("/address", middlewares.SetMiddlewareJSON(s.CreateAddress)).Methods("POST")
 	s.Router.HandleFunc("/address/{id}", middlewares.SetMiddlewareJSON(s.GetAddressByID)).Methods("GET")
 	s.Router.HandleFunc("/address/mail/{smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetMailingAddressBySmartID)).Methods("GET")
-	s.Router.HandleFunc("/address/package/sender/{smart_id}/{date}/{tracking}", middlewares.SetMiddlewareJSON(s.GetPackageSenderAddressBySmartID)).Queries("description", "{description}").Methods("GET")
 	s.Router.HandleFunc("/address/package/sender/{smart_id}/{date}/{tracking}", middlewares.SetMiddlewareJSON(s.GetPackageSenderAddressBySmartID)).Methods("GET")
 	s.Router.HandleFunc("/address/package/sender/{smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetPackageSenderAddressBySmartID)).Methods("GET")
-	s.Router.HandleFunc("/address/package/recipient/{smart_id}/{date}/{tracking}", middlewares.SetMiddlewareJSON(s.GetPackageRecipientAddressBySmartID)).Queries("description", "{description}").Methods("GET")
 	s.Router.HandleFunc("/address/package/recipient/{smart_id}/{date}/{tracking}", middlewares.SetMiddlewareJSON(s.GetPackageRecipientAddressBySmartID)).Methods("GET")
 	s.Router.HandleFunc("/address/package/recipient/{smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetPackageRecipientAddressBySmartID)).Methods("GET")
 	s.Router.HandleFunc("/address/{id}", middlewares.SetMiddlewareJSON(middlewares.SetMiddlewareAuthentication(s.UpdateAddress))).Methods("PUT")

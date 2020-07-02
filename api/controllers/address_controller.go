@@ -478,13 +478,6 @@ func (server *Server) GetPackageAddressToAndFromBySmartID(w http.ResponseWriter,
 		return
 	}
 
-	packageDescription := &models.PackageDescription{}
-	packageDescription, err = packageDescription.SavePackageDescription(server.DB)
-	if err != nil {
-		responses.ERROR(w, http.StatusInternalServerError, err)
-		return
-	}
-
 	senderAddress := models.AddressAssignment{}
 	senderAddressReceived, err := senderAddress.FindPackageAddressWithSmartID(server.DB, sender, date)
 	if err != nil {
@@ -501,6 +494,13 @@ func (server *Server) GetPackageAddressToAndFromBySmartID(w http.ResponseWriter,
 
 	contacts := models.Contact{}
 	err = contacts.SaveContacts(server.DB, sender.ID, recipient.ID)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	packageDescription := &models.PackageDescription{}
+	packageDescription, err = packageDescription.SavePackageDescription(server.DB)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
@@ -576,15 +576,15 @@ func (server *Server) GetPackageSenderAddressBySmartID(w http.ResponseWriter, r 
 		return
 	}
 
-	packageDescription := &models.PackageDescription{}
-	packageDescription, err = packageDescription.SavePackageDescription(server.DB)
+	address := models.AddressAssignment{}
+	addressReceived, err := address.FindPackageAddressWithSmartID(server.DB, user, date)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	address := models.AddressAssignment{}
-	addressReceived, err := address.FindPackageAddressWithSmartID(server.DB, user, date)
+	packageDescription := &models.PackageDescription{}
+	packageDescription, err = packageDescription.SavePackageDescription(server.DB)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
@@ -657,15 +657,15 @@ func (server *Server) GetPackageRecipientAddressBySmartID(w http.ResponseWriter,
 		return
 	}
 
-	packageDescription := &models.PackageDescription{}
-	packageDescription, err = packageDescription.SavePackageDescription(server.DB)
+	address := models.AddressAssignment{}
+	addressReceived, err := address.FindPackageAddressWithSmartID(server.DB, user, date)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	address := models.AddressAssignment{}
-	addressReceived, err := address.FindPackageAddressWithSmartID(server.DB, user, date)
+	packageDescription := &models.PackageDescription{}
+	packageDescription, err = packageDescription.SavePackageDescription(server.DB)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return

@@ -1,7 +1,6 @@
 package responses
 
 import (
-	"sort"
 	"time"
 
 	"github.com/nmelhado/smartmail-api/api/models"
@@ -43,7 +42,6 @@ type PasswordReset struct {
 type UserAndAddressResponse struct {
 	User      CreateUserResponse `json:"user"`
 	Addresses []BasicAddress     `json:"addresses"`
-	Contacts  []Contact          `json:"contacts"`
 	Token     string             `json:"token"`
 	Expires   time.Time          `json:"expires"`
 }
@@ -123,6 +121,8 @@ type ZipResponse struct {
 
 // Contacts is the array of contacts response for a contact request
 type Contacts struct {
+	Success  bool      `json:"success"`
+	Count    int64     `json:"count"`
 	Contacts []Contact `json:"contacts"`
 }
 
@@ -322,9 +322,6 @@ func TranslateContacts(originalContacts []models.Contact) (contacts []Contact) {
 		nextContact := TranslateContact(contact)
 		contacts = append(contacts, nextContact)
 	}
-
-	// orders by first name and then last name
-	sort.SliceStable(contacts, func(i, j int) bool { return contacts[i].Name < contacts[j].Name })
 	return
 }
 

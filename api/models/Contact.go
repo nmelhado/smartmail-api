@@ -2,6 +2,8 @@ package models
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -54,12 +56,38 @@ func (c *Contact) SaveContact(db *gorm.DB, userID uuid.UUID, contactID uuid.UUID
 }
 
 // GetContacts retrieves all of a user's contacts
-func GetContacts(db *gorm.DB, userID uuid.UUID) (contacts []Contact, err error) {
-	err = db.Debug().Model(&Contact{}).Where("user_id = ?", userID).Preload("Contact").Find(&contacts).Error
-	if err != nil {
-		return []Contact{}, err
+func GetContacts(db *gorm.DB, userID uuid.UUID, limit int64, offset int64, sortPref string) (count int64, contacts []Contact, err error) {
+	if sortPref == "recent" {
+		err = db.Debug().Model(&Contact{}).Order("created_at desc").Where("user_id = ?", userID).Count(&count).Limit(limit).Offset(offset).Preload("Contact").Find(&contacts).Error
+		if err != nil {
+			return 0, []Contact{}, err
+		}
+	} else {
+		err = db.Debug().Model(&Contact{}).Joins("left join users on users.id = contacts.contact_id").Order("users.first_name").Order("users.last_name").Where("user_id = ?", userID).Count(&count).Limit(limit).Offset(offset).Preload("Contact").Find(&contacts).Error
+		if err != nil {
+			return 0, []Contact{}, err
+		}
 	}
-	return contacts, nil
+	return
+}
+
+// SearchContacts retrieves all of a user's contacts that meet a user's search parameter
+func SearchContacts(db *gorm.DB, userID uuid.UUID, limit int64, offset int64, search string) (count int64, contacts []Contact, err error) {
+	searchTerms := []string{}
+	rawSearchTerms := strings.Fields(search)
+	for _, singleSearchTerm := range rawSearchTerms {
+		searchTerms = append(searchTerms, strings.ToLower(singleSearchTerm))
+	}
+	if len(searchTerms) == 1 {
+		likeTerm := fmt.Sprintf("%%%s%%", searchTerms[0])
+		err = db.Debug().Model(&Contact{}).Joins("left join users on users.id = contacts.contact_id").Order("users.first_name").Order("users.last_name").Where("user_id = ? AND (LOWER(users.first_name) LIKE ? OR LOWER(users.last_name) LIKE ? OR LOWER(users.smart_id) = ?)", userID, likeTerm, likeTerm, searchTerms[0]).Count(&count).Limit(limit).Offset(offset).Preload("Contact").Find(&contacts).Error
+	} else {
+		err = db.Debug().Model(&Contact{}).Joins("left join users on users.id = contacts.contact_id").Order("users.first_name").Order("users.last_name").Where("user_id = ? AND (LOWER(users.first_name) IN (?) OR LOWER(users.last_name) IN (?) OR LOWER(users.smart_id) IN (?))", userID, searchTerms, searchTerms, searchTerms).Count(&count).Limit(limit).Offset(offset).Preload("Contact").Find(&contacts).Error
+	}
+	if err != nil {
+		return 0, []Contact{}, err
+	}
+	return
 }
 
 // DeleteContact removes a contact from the DB
