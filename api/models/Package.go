@@ -87,7 +87,7 @@ func (p *Package) FindPackageByTrackingAndShipper(db *gorm.DB, senderID uuid.UUI
 func (p *Package) FindAllOpenPackagesForUser(db *gorm.DB, uid uuid.UUID) (*[]Package, error) {
 	var err error
 	packages := []Package{}
-	err = db.Debug().Set("gorm:auto_preload", true).Order("delivered_on desc, estimated_delivery desc").Model(&Package{}).Where("(sender_id = ? OR recipient_id = ?) AND tracking IS NOT NULL AND tracking <> '' AND delivered = false", uid, uid).Limit(100).Find(&packages).Error
+	err = db.Debug().Set("gorm:auto_preload", true).Order("delivered_on desc, estimated_delivery desc").Model(&Package{}).Where("(sender_id = ? OR recipient_id = ?) AND tracking IS NOT NULL AND tracking <> '' AND delivered = false", uid, uid).Limit(20).Find(&packages).Error
 	if err != nil {
 		return &[]Package{}, err
 	}
@@ -98,14 +98,14 @@ func (p *Package) FindAllOpenPackagesForUser(db *gorm.DB, uid uuid.UUID) (*[]Pac
 func (p *Package) FindAllDeliveredPackagesForUser(db *gorm.DB, uid uuid.UUID) (*[]Package, error) {
 	var err error
 	packages := []Package{}
-	err = db.Debug().Set("gorm:auto_preload", true).Order("delivered_on desc, estimated_delivery desc").Model(&Package{}).Where("(sender_id = ? OR recipient_id = ?) AND tracking IS NOT NULL AND tracking <> '' AND delivered = true", uid, uid).Limit(100).Find(&packages).Error
+	err = db.Debug().Set("gorm:auto_preload", true).Order("delivered_on desc, estimated_delivery desc").Model(&Package{}).Where("(sender_id = ? OR recipient_id = ?) AND tracking IS NOT NULL AND tracking <> '' AND delivered = true", uid, uid).Limit(5).Find(&packages).Error
 	if err != nil {
 		return &[]Package{}, err
 	}
 	return &packages, nil
 }
 
-// FindAllPackagesForUser retrieves the last 100 non-delivered and last 100 delivered packages (with tracking numbers) a user has linked to their account. Used in UI to provide packages status and history
+// FindAllPackagesForUser retrieves the last 20 non-delivered and last 5 delivered packages (with tracking numbers) a user has linked to their account. Used in UI to provide packages status and history
 // Uses the FindAllOpenPackagesForUser and FindAllDeliveredPackagesForUser functions to retrieve the results
 func (p *Package) FindAllPackagesForUser(db *gorm.DB, uid uuid.UUID) (*[]Package, *[]Package, error) {
 	openPackages, err := p.FindAllOpenPackagesForUser(db, uid)
@@ -117,6 +117,15 @@ func (p *Package) FindAllPackagesForUser(db *gorm.DB, uid uuid.UUID) (*[]Package
 		return &[]Package{}, &[]Package{}, err
 	}
 	return openPackages, deliveredPackages, nil
+}
+
+// FindPackagesForUser retrieves a specific number of either delivered or open packages
+func (p *Package) FindPackagesForUser(db *gorm.DB, userID uuid.UUID, limit int64, offset int64, search null.String) (count int64, requestedPackages *[]Package, err error) {
+	err = db.Debug().Set("gorm:auto_preload", true).Order("delivered_on desc, estimated_delivery desc").Model(&Package{}).Where("(sender_id = ? OR recipient_id = ?) AND tracking IS NOT NULL AND tracking <> '' AND delivered = true", userID, userID).Count(&count).Limit(limit).Offset(offset).Find(&requestedPackages).Error
+	if err != nil {
+		return 0, &[]Package{}, err
+	}
+	return count, requestedPackages, nil
 }
 
 // DeletePackage removes an address assignment from the DB (should never use this unless correcting an accidental addition)

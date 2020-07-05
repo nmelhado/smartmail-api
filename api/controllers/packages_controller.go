@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/nmelhado/smartmail-api/api/auth"
@@ -16,8 +18,8 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
-// GetPackages gets a user's packages
-func (server *Server) GetPackages(w http.ResponseWriter, r *http.Request) {
+// PreviewPackages gets a collection of a user's recent packages
+func (server *Server) PreviewPackages(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	reqID, err := uuid.FromString(vars["user_id"])
@@ -41,6 +43,64 @@ func (server *Server) GetPackages(w http.ResponseWriter, r *http.Request) {
 	packageModel := models.Package{}
 
 	openPackages, deliveredPackages, err := packageModel.FindAllPackagesForUser(server.DB, uid)
+
+	packagesResponse := responses.TranslatePackagesResponse(*openPackages, *deliveredPackages)
+
+	responses.JSON(w, http.StatusOK, packagesResponse)
+}
+
+// GetPackages gets a collection of a user's recent packages
+func (server *Server) GetPackages(w http.ResponseWriter, r *http.Request) {
+	uid := uuid.FromStringOrNil(vars["id"])
+	var limit int64
+	limitQuery, ok := vars["limit"]
+	if ok {
+		limitConvert, err := strconv.Atoi(limitQuery)
+		if err != nil {
+			fmt.Printf("Error, invalid limit:  %s", limitQuery)
+			responses.ERROR(w, http.StatusUnprocessableEntity, err)
+			return
+		}
+		limit = int64(limitConvert)
+	}
+	var offset int64
+	pageQuery, ok := vars["page"]
+	if ok {
+		pageConvert, err := strconv.Atoi(pageQuery)
+		if err != nil {
+			fmt.Printf("Error, invalid limit:  %s", pageQuery)
+			responses.ERROR(w, http.StatusUnprocessableEntity, err)
+			return
+		}
+		offset = (int64(pageConvert) - 1) * limit
+	}
+	var packageType string
+	packageTypeQuery, ok := vars["type"]
+	if ok {
+		packageType = packageTypeQuery
+	}
+	var search null.String
+	searchQuery, ok := vars["search"]
+	if ok && strings.TrimSpace(searchQuery) != "" {
+		search = null.StringFrom(searchQuery)
+	}
+
+	uid, err := auth.ExtractUITokenID(r)
+	if err != nil {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	if uid != reqID {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	packageModel := models.Package{}
+
+	openPackages, deliveredPackages, err := packageModel.FindPackagesForUser(server.DB, uid, packageType, limit, offset, search)
 
 	packagesResponse := responses.TranslatePackagesResponse(*openPackages, *deliveredPackages)
 

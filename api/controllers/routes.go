@@ -62,7 +62,7 @@ func (s *Server) initializeRoutes() {
 	s.Router.HandleFunc("/address/{id}", middlewares.SetMiddlewareAuthentication(s.DeleteAddress)).Methods("DELETE")
 
 	// Packages route
-	s.Router.HandleFunc("/packages/{user_id}", middlewares.SetMiddlewareJSON(s.GetPackages)).Methods("GET")
+	s.Router.HandleFunc("/preview_packages/{user_id}", middlewares.SetMiddlewareJSON(s.PreviewPackages)).Methods("GET")
 	s.Router.HandleFunc("/package", middlewares.SetMiddlewareJSON(s.UpdatePackage)).Methods("Put")
 	s.Router.HandleFunc("/package/description", middlewares.SetMiddlewareJSON(s.UpdatePackageDescription)).Methods("Put")
 }

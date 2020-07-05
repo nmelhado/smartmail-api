@@ -65,8 +65,6 @@ func (server *Server) GetContacts(w http.ResponseWriter, r *http.Request) {
 		search = null.StringFrom(searchQuery)
 	}
 
-	fmt.Printf("search:   %v", searchQuery)
-
 	tokenID, err := auth.ExtractUITokenID(r)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
