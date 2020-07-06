@@ -63,6 +63,8 @@ func (s *Server) initializeRoutes() {
 
 	// Packages route
 	s.Router.HandleFunc("/preview_packages/{user_id}", middlewares.SetMiddlewareJSON(s.PreviewPackages)).Methods("GET")
+	s.Router.HandleFunc("/check_packages/{user_id}", middlewares.SetMiddlewareJSON(s.CheckOpenPackages)).Methods("GET")
+	s.Router.HandleFunc("/packages/{user_id}", middlewares.SetMiddlewareJSON(s.GetPackages)).Queries("limit", "{limit}", "page", "{page}", "type", "{type}", "search", "{search}").Methods("GET")
 	s.Router.HandleFunc("/package", middlewares.SetMiddlewareJSON(s.UpdatePackage)).Methods("Put")
 	s.Router.HandleFunc("/package/description", middlewares.SetMiddlewareJSON(s.UpdatePackageDescription)).Methods("Put")
 }

@@ -2,6 +2,8 @@ package models
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -87,6 +89,17 @@ func (p *Package) FindPackageByTrackingAndShipper(db *gorm.DB, senderID uuid.UUI
 func (p *Package) FindAllOpenPackagesForUser(db *gorm.DB, uid uuid.UUID) (*[]Package, error) {
 	var err error
 	packages := []Package{}
+	err = db.Debug().Set("gorm:auto_preload", true).Model(&Package{}).Where("(sender_id = ? OR recipient_id = ?) AND tracking IS NOT NULL AND tracking <> '' AND delivered = false", uid, uid).Limit(250).Find(&packages).Error
+	if err != nil {
+		return &[]Package{}, err
+	}
+	return &packages, nil
+}
+
+// FindOpenPackagesPreviewForUser retrieves the last 100 non-delivered packages (with tracking numbers) a user has linked to their account. Used in UI to provide users currently active packages
+func (p *Package) FindOpenPackagesPreviewForUser(db *gorm.DB, uid uuid.UUID) (*[]Package, error) {
+	var err error
+	packages := []Package{}
 	err = db.Debug().Set("gorm:auto_preload", true).Order("delivered_on desc, estimated_delivery desc").Model(&Package{}).Where("(sender_id = ? OR recipient_id = ?) AND tracking IS NOT NULL AND tracking <> '' AND delivered = false", uid, uid).Limit(20).Find(&packages).Error
 	if err != nil {
 		return &[]Package{}, err
@@ -94,8 +107,8 @@ func (p *Package) FindAllOpenPackagesForUser(db *gorm.DB, uid uuid.UUID) (*[]Pac
 	return &packages, nil
 }
 
-// FindAllDeliveredPackagesForUser retrieves the last 100 delivered packages (with tracking numbers) a user has linked to their account. Used in UI to provide users with package history
-func (p *Package) FindAllDeliveredPackagesForUser(db *gorm.DB, uid uuid.UUID) (*[]Package, error) {
+// FindDeliveredPackagesPreviewForUser retrieves the last 100 delivered packages (with tracking numbers) a user has linked to their account. Used in UI to provide users with package history
+func (p *Package) FindDeliveredPackagesPreviewForUser(db *gorm.DB, uid uuid.UUID) (*[]Package, error) {
 	var err error
 	packages := []Package{}
 	err = db.Debug().Set("gorm:auto_preload", true).Order("delivered_on desc, estimated_delivery desc").Model(&Package{}).Where("(sender_id = ? OR recipient_id = ?) AND tracking IS NOT NULL AND tracking <> '' AND delivered = true", uid, uid).Limit(5).Find(&packages).Error
@@ -106,13 +119,13 @@ func (p *Package) FindAllDeliveredPackagesForUser(db *gorm.DB, uid uuid.UUID) (*
 }
 
 // FindAllPackagesForUser retrieves the last 20 non-delivered and last 5 delivered packages (with tracking numbers) a user has linked to their account. Used in UI to provide packages status and history
-// Uses the FindAllOpenPackagesForUser and FindAllDeliveredPackagesForUser functions to retrieve the results
+// Uses the FindOpenPackagesPreviewForUser and FindDeliveredPackagesPreviewForUser functions to retrieve the results
 func (p *Package) FindAllPackagesForUser(db *gorm.DB, uid uuid.UUID) (*[]Package, *[]Package, error) {
-	openPackages, err := p.FindAllOpenPackagesForUser(db, uid)
+	openPackages, err := p.FindOpenPackagesPreviewForUser(db, uid)
 	if err != nil {
 		return &[]Package{}, &[]Package{}, err
 	}
-	deliveredPackages, err := p.FindAllDeliveredPackagesForUser(db, uid)
+	deliveredPackages, err := p.FindDeliveredPackagesPreviewForUser(db, uid)
 	if err != nil {
 		return &[]Package{}, &[]Package{}, err
 	}
@@ -120,11 +133,29 @@ func (p *Package) FindAllPackagesForUser(db *gorm.DB, uid uuid.UUID) (*[]Package
 }
 
 // FindPackagesForUser retrieves a specific number of either delivered or open packages
-func (p *Package) FindPackagesForUser(db *gorm.DB, userID uuid.UUID, limit int64, offset int64, search null.String) (count int64, requestedPackages *[]Package, err error) {
-	err = db.Debug().Set("gorm:auto_preload", true).Order("delivered_on desc, estimated_delivery desc").Model(&Package{}).Where("(sender_id = ? OR recipient_id = ?) AND tracking IS NOT NULL AND tracking <> '' AND delivered = true", userID, userID).Count(&count).Limit(limit).Offset(offset).Find(&requestedPackages).Error
-	if err != nil {
-		return 0, &[]Package{}, err
+func (p *Package) FindPackagesForUser(db *gorm.DB, userID uuid.UUID, packageType string, limit int64, offset int64, search null.String) (count int64, requestedPackages []Package, err error) {
+
+	if search.Valid {
+		searchTerms := []string{}
+		rawSearchTerms := strings.Fields(search.String)
+		for _, singleSearchTerm := range rawSearchTerms {
+			searchTerms = append(searchTerms, strings.ToLower(singleSearchTerm))
+		}
+		if len(searchTerms) == 1 {
+			likeTerm := fmt.Sprintf("%%%s%%", searchTerms[0])
+			err = db.Debug().Set("gorm:auto_preload", true).Order("delivered_on desc, estimated_delivery desc").Model(&Package{}).Joins("left join package_descriptions on package_descriptions.id = packages.package_description_id").Joins("left join users AS sender on sender.id = packages.sender_id").Joins("left join users AS recipient on recipient.id = packages.recipient_id").Where("(sender_id = ? OR recipient_id = ?) AND tracking IS NOT NULL AND tracking <> '' AND delivered = ? AND (LOWER(sender.first_name) LIKE ? OR LOWER(sender.last_name) LIKE ? OR LOWER(recipient.first_name) LIKE ? OR LOWER(recipient.last_name) LIKE ? OR LOWER(package_descriptions.contents) LIKE ? OR LOWER(sender.smart_id) = ? OR LOWER(recipient.smart_id) = ?)", userID, userID, packageType == "delivered", likeTerm, likeTerm, likeTerm, likeTerm, likeTerm, likeTerm, likeTerm).Count(&count).Limit(limit).Offset(offset).Find(&requestedPackages).Error
+		} else {
+			likeTerm := fmt.Sprintf("%%%s%%", search.String)
+			err = db.Debug().Set("gorm:auto_preload", true).Order("delivered_on desc, estimated_delivery desc").Model(&Package{}).Joins("left join package_descriptions on package_descriptions.id = packages.package_description_id").Joins("left join users AS sender on sender.id = packages.sender_id").Joins("left join users AS recipient on recipient.id = packages.recipient_id").Where("(sender_id = ? OR recipient_id = ?) AND tracking IS NOT NULL AND tracking <> '' AND delivered = ? AND (LOWER(sender.first_name) IN (?) OR LOWER(sender.last_name) IN (?) OR LOWER(recipient.first_name) IN (?) OR LOWER(recipient.last_name) IN (?) OR LOWER(package_descriptions.contents) LIKE ? OR LOWER(sender.smart_id) IN (?) OR LOWER(recipient.smart_id) IN (?))", userID, userID, packageType == "delivered", searchTerms, searchTerms, searchTerms, searchTerms, likeTerm, searchTerms, searchTerms).Count(&count).Limit(limit).Offset(offset).Find(&requestedPackages).Error
+		}
+	} else {
+		err = db.Debug().Set("gorm:auto_preload", true).Order("delivered_on desc, estimated_delivery desc").Model(&Package{}).Joins("left join package_descriptions on package_descriptions.id = packages.package_description_id").Where("(sender_id = ? OR recipient_id = ?) AND tracking IS NOT NULL AND tracking <> '' AND delivered = ?", userID, userID, packageType == "delivered").Count(&count).Limit(limit).Offset(offset).Find(&requestedPackages).Error
 	}
+
+	if err != nil {
+		return 0, []Package{}, err
+	}
+
 	return count, requestedPackages, nil
 }
 

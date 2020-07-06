@@ -44,14 +44,58 @@ func (server *Server) PreviewPackages(w http.ResponseWriter, r *http.Request) {
 
 	openPackages, deliveredPackages, err := packageModel.FindAllPackagesForUser(server.DB, uid)
 
-	packagesResponse := responses.TranslatePackagesResponse(*openPackages, *deliveredPackages)
+	packagesResponse := responses.TranslatePreviewPackagesResponse(*openPackages, *deliveredPackages)
+
+	responses.JSON(w, http.StatusOK, packagesResponse)
+}
+
+// PreviewPackages gets a collection of a user's recent packages
+func (server *Server) CheckOpenPackages(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	reqID, err := uuid.FromString(vars["user_id"])
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+	uid, err := auth.ExtractUITokenID(r)
+	if err != nil {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	if uid != reqID {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	packageModel := models.Package{}
+
+	openPackages, err := packageModel.FindAllOpenPackagesForUser(server.DB, uid)
+
+	packagesResponse := responses.TranslatePackagesResponse(*openPackages)
 
 	responses.JSON(w, http.StatusOK, packagesResponse)
 }
 
 // GetPackages gets a collection of a user's recent packages
 func (server *Server) GetPackages(w http.ResponseWriter, r *http.Request) {
-	uid := uuid.FromStringOrNil(vars["id"])
+	reqID, err := auth.ExtractUITokenID(r)
+	if err != nil {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+	vars := mux.Vars(r)
+	uid := uuid.FromStringOrNil(vars["user_id"])
+	if uid != reqID {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
 	var limit int64
 	limitQuery, ok := vars["limit"]
 	if ok {
@@ -85,24 +129,12 @@ func (server *Server) GetPackages(w http.ResponseWriter, r *http.Request) {
 		search = null.StringFrom(searchQuery)
 	}
 
-	uid, err := auth.ExtractUITokenID(r)
-	if err != nil {
-		fmt.Print("\nUnauthorized\n")
-		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
-		return
-	}
-
-	if uid != reqID {
-		fmt.Print("\nUnauthorized\n")
-		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
-		return
-	}
-
 	packageModel := models.Package{}
 
-	openPackages, deliveredPackages, err := packageModel.FindPackagesForUser(server.DB, uid, packageType, limit, offset, search)
+	count, requestedPackages, err := packageModel.FindPackagesForUser(server.DB, uid, packageType, limit, offset, search)
 
-	packagesResponse := responses.TranslatePackagesResponse(*openPackages, *deliveredPackages)
+	packagesResponse := responses.TranslatePackagesResponse(requestedPackages)
+	packagesResponse.Count = count
 
 	responses.JSON(w, http.StatusOK, packagesResponse)
 }

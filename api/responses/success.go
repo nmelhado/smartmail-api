@@ -135,10 +135,17 @@ type Contact struct {
 	AddedOn time.Time `json:"added_on"`
 }
 
-// PackagesResponse is the array of open packages and delivered packages response for a packages request
-type PackagesResponse struct {
+// PackagesPreviewResponse is the array of open packages and delivered packages response for a packages preview request
+type PackagesPreviewResponse struct {
 	OpenPackages      []SinglePackage `json:"open_packages"`
 	DeliveredPackages []SinglePackage `json:"delivered_packages"`
+	Success           bool            `json:"success"`
+}
+
+// PackagesResponse is the array of open packages and delivered packages response for a packages request
+type PackagesResponse struct {
+	Count             int64           `json:"count"`
+	RequestedPackages []SinglePackage `json:"packages"`
 	Success           bool            `json:"success"`
 }
 
@@ -336,7 +343,7 @@ func TranslateContact(originalContact models.Contact) (contact Contact) {
 }
 
 // TranslatePackagesResponse converts an array of packages into an array of package responses
-func TranslatePackagesResponse(openPackages []models.Package, deliveredPackages []models.Package) (userPackages PackagesResponse) {
+func TranslatePreviewPackagesResponse(openPackages []models.Package, deliveredPackages []models.Package) (userPackages PackagesPreviewResponse) {
 	// translate open packages
 	for _, singlePackage := range openPackages {
 		nextPackage := TranslatePackage(singlePackage)
@@ -350,6 +357,19 @@ func TranslatePackagesResponse(openPackages []models.Package, deliveredPackages 
 	}
 
 	userPackages.Success = true
+
+	return
+}
+
+// TranslatePackagesResponse converts an array of packages into an array of package responses
+func TranslatePackagesResponse(userPackages []models.Package) (requestedPackages PackagesResponse) {
+	// translate packages
+	for _, singlePackage := range userPackages {
+		nextPackage := TranslatePackage(singlePackage)
+		requestedPackages.RequestedPackages = append(requestedPackages.RequestedPackages, nextPackage)
+	}
+
+	requestedPackages.Success = true
 
 	return
 }
