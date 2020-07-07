@@ -19,6 +19,11 @@ type CreateUserResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// UserResponse is the struct returned when a user is updated
+type UserResponse struct {
+	User CreateUserResponse `json:"user"`
+}
+
 // TokenResponse is the struct returned when a token request
 type TokenResponse struct {
 	Token   string    `json:"token"`
@@ -409,5 +414,17 @@ func TranslatePackage(originalPackage models.Package) (newPackage SinglePackage)
 			OrderLink:  originalPackage.PackageDescription.OrderLink,
 		}
 	}
+	return
+}
+
+// TranslateSingleUser converts a single user into a user response
+func TranslateSingleUser(originalUser models.User) (user UserResponse) {
+	user.User.ID = originalUser.ID
+	user.User.FirstName = originalUser.FirstName
+	user.User.LastName = originalUser.LastName
+	user.User.Email = originalUser.Email
+	user.User.Phone = originalUser.Phone
+	user.User.SmartID = originalUser.SmartID
+	user.User.CreatedAt = originalUser.CreatedAt
 	return
 }

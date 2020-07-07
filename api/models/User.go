@@ -127,6 +127,23 @@ func (u *User) Validate(action string) error {
 			return errors.New("Invalid email")
 		}
 		return nil
+	case "update_basic":
+		if u.FirstName == "" {
+			return errors.New("First name required")
+		}
+		if u.LastName == "" {
+			return errors.New("Last name required")
+		}
+		if u.Phone == "" {
+			return errors.New("Phone required")
+		}
+		if u.Email == "" {
+			return errors.New("Email required")
+		}
+		if err := checkmail.ValidateFormat(u.Email); err != nil {
+			return errors.New("Invalid email")
+		}
+		return nil
 	case "login":
 		if u.Password == "" {
 			return errors.New("Password required")
@@ -223,6 +240,29 @@ func (u *User) UpdateAUser(db *gorm.DB, uid uuid.UUID) (*User, error) {
 	}
 	// This is the display the updated user
 	err = db.Debug().Model(&User{}).Where("id = ?", uid).Take(&u).Error
+	if err != nil {
+		return &User{}, err
+	}
+	return u, nil
+}
+
+// UpdateAUserBasic updates the basic values of a user
+func (u *User) UpdateAUserBasic(db *gorm.DB, uid uuid.UUID) (*User, error) {
+
+	db = db.Debug().Model(&User{}).Where("id = ?", uid).Take(&User{}).UpdateColumns(
+		map[string]interface{}{
+			"first_name": u.FirstName,
+			"last_name":  u.LastName,
+			"phone":      u.Phone,
+			"email":      u.Email,
+			"update_at":  time.Now(),
+		},
+	)
+	if db.Error != nil {
+		return &User{}, db.Error
+	}
+	// This is the display the updated user
+	err := db.Debug().Model(&User{}).Where("id = ?", uid).Take(&u).Error
 	if err != nil {
 		return &User{}, err
 	}
