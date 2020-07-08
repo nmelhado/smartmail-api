@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql/driver"
 	"errors"
-	"html"
 	"log"
 	"strings"
 	"time"
@@ -91,14 +90,14 @@ func (u *User) BeforeSave() error {
 // Prepare sanitizes a user object before other operations are performed
 func (u *User) Prepare() {
 	u.ID = uuid.UUID{}
-	u.SmartID = html.EscapeString(strings.ToUpper(strings.TrimSpace(u.SmartID)))
-	u.FirstName = html.EscapeString(strings.TrimSpace(u.FirstName))
-	u.LastName = html.EscapeString(strings.TrimSpace(u.LastName))
-	u.Email = html.EscapeString(strings.ToLower(strings.TrimSpace(u.Email)))
-	u.Phone = html.EscapeString(strings.TrimSpace(u.Phone))
-	u.LargeLogo = null.StringFrom(html.EscapeString(strings.TrimSpace(u.LargeLogo.String)))
-	u.SmallLogo = null.StringFrom(html.EscapeString(strings.TrimSpace(u.SmallLogo.String)))
-	u.RedirectURL = null.StringFrom(html.EscapeString(strings.TrimSpace(u.RedirectURL.String)))
+	u.SmartID = strings.ToUpper(strings.TrimSpace(u.SmartID))
+	u.FirstName = strings.TrimSpace(u.FirstName)
+	u.LastName = strings.TrimSpace(u.LastName)
+	u.Email = strings.ToLower(strings.TrimSpace(u.Email))
+	u.Phone = strings.TrimSpace(u.Phone)
+	u.LargeLogo = null.StringFrom(strings.TrimSpace(u.LargeLogo.String))
+	u.SmallLogo = null.StringFrom(strings.TrimSpace(u.SmallLogo.String))
+	u.RedirectURL = null.StringFrom(strings.TrimSpace(u.RedirectURL.String))
 	u.Authority = UserAuth
 	u.CreatedAt = time.Now()
 	u.UpdatedAt = time.Now()

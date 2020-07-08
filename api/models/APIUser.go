@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql/driver"
 	"errors"
-	"html"
 	"log"
 	"strings"
 	"time"
@@ -121,10 +120,10 @@ func (au *APIUser) BeforeSave() error {
 // Prepare sanitizes an API user object before other operations are performed
 func (au *APIUser) Prepare() {
 	au.ID = uuid.UUID{}
-	au.Username = html.EscapeString(strings.ToUpper(strings.TrimSpace(au.Username)))
-	au.Name = html.EscapeString(strings.TrimSpace(au.Name))
-	au.Email = html.EscapeString(strings.ToLower(strings.TrimSpace(au.Email)))
-	au.Phone = html.EscapeString(strings.TrimSpace(au.Phone))
+	au.Username = strings.ToUpper(strings.TrimSpace(au.Username))
+	au.Name = strings.TrimSpace(au.Name)
+	au.Email = strings.ToLower(strings.TrimSpace(au.Email))
+	au.Phone = strings.TrimSpace(au.Phone)
 	au.Permission = NoPermission // Set the permission to none and then update it to the appropriate permission level
 	au.CreatedAt = time.Now()
 	au.UpdatedAt = time.Now()
