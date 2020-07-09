@@ -629,7 +629,7 @@ func (server *Server) ProvidePackageAddressToAndFromBySmartID(w http.ResponseWri
 	}
 
 	recipientAddress := &models.AddressAssignment{}
-	if addressAndInfoRequest.SenderSmartID.Valid {
+	if addressAndInfoRequest.RecipientSmartID.Valid {
 		recipientAddress, err = recipientAddress.FindPackageAddressWithSmartID(server.DB, recipient, addressAndInfoRequest.Date.Time)
 		if err != nil {
 			responses.ERROR(w, http.StatusInternalServerError, err)
@@ -688,7 +688,7 @@ func (server *Server) ProvidePackageAddressToAndFromBySmartID(w http.ResponseWri
 
 	if addressAndInfoRequest.RecipientSmartID.Valid {
 		recipientResponse := responses.AddressSmartIDResponse{}
-		responses.TranslateSmartAddressResponse(senderAddress, &recipientResponse)
+		responses.TranslateSmartAddressResponse(recipientAddress, &recipientResponse)
 		addressResponse.Recipient = recipientResponse
 	}
 
