@@ -531,6 +531,170 @@ func (server *Server) GetPackageAddressToAndFromBySmartID(w http.ResponseWriter,
 	responses.JSON(w, http.StatusOK, addressResponse)
 }
 
+// AddressAndInfoRequest is the struct to receive a shipping info request
+// with additional package description within a POST request from the mailer
+type AddressAndInfoRequest struct {
+	SenderSmartID      null.String               `json:"sender_smart_id"`
+	RecipientSmartID   null.String               `json:"recipient_smart_id"`
+	Tracking           string                    `json:"tracking"`
+	TargetDate         string                    `json:"target_date"`
+	Date               null.Time                 `json:"date"`
+	PackageDescription models.PackageDescription `json:"package_description"`
+}
+
+// ProvidePackageAddressToAndFromBySmartID retrieves a user's mailing address using a customer's SmartID and sets package description
+func (server *Server) ProvidePackageAddressToAndFromBySmartID(w http.ResponseWriter, r *http.Request) {
+	reqUID, permission, err := auth.ExtractAPIUserTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	reqUser := models.APIUser{}
+
+	err = server.DB.Debug().Model(models.APIUser{}).Where("id = ?", reqUID).Take(&reqUser).Error
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	hasPermission := models.FullAddressPermissions(reqUser.Permission)
+
+	if !hasPermission || string(reqUser.Permission) != permission {
+		fmt.Print("\nUnauthorized\n")
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
+
+	addressAndInfoRequest := AddressAndInfoRequest{}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	err = json.Unmarshal(body, &addressAndInfoRequest)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if !addressAndInfoRequest.SenderSmartID.Valid && !addressAndInfoRequest.RecipientSmartID.Valid {
+		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Either a sender smartID or a recipient smartID must be provided"))
+		return
+	}
+
+	if addressAndInfoRequest.TargetDate == "" {
+		responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Please provide a valid date"))
+		return
+	}
+
+	date, err := time.Parse("2006-01-02", addressAndInfoRequest.TargetDate)
+	if err != nil {
+		responses.ERROR(w, http.StatusBadRequest, err)
+		return
+	}
+
+	addressAndInfoRequest.Date = null.TimeFrom(date)
+
+	sender := models.User{}
+	recipient := models.User{}
+
+	if addressAndInfoRequest.SenderSmartID.Valid {
+		addressAndInfoRequest.SenderSmartID = null.StringFrom(sanitizeSmartID(strings.ToUpper(addressAndInfoRequest.SenderSmartID.String)))
+		err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", addressAndInfoRequest.SenderSmartID.String).Take(&sender).Error
+		if err != nil {
+			responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find sender with smartID: %s", addressAndInfoRequest.SenderSmartID.String))
+			return
+		}
+	}
+
+	if addressAndInfoRequest.RecipientSmartID.Valid {
+		addressAndInfoRequest.RecipientSmartID = null.StringFrom(sanitizeSmartID(strings.ToUpper(addressAndInfoRequest.RecipientSmartID.String)))
+		err = server.DB.Debug().Model(models.User{}).Where("smart_id = ?", addressAndInfoRequest.RecipientSmartID.String).Take(&recipient).Error
+		if err != nil {
+			responses.ERROR(w, http.StatusUnprocessableEntity, fmt.Errorf("Unable to find recipient with smartID: %s", addressAndInfoRequest.RecipientSmartID.String))
+			return
+		}
+	}
+
+	senderAddress := &models.AddressAssignment{}
+	if addressAndInfoRequest.SenderSmartID.Valid {
+		senderAddress, err = senderAddress.FindPackageAddressWithSmartID(server.DB, sender, addressAndInfoRequest.Date.Time)
+		if err != nil {
+			responses.ERROR(w, http.StatusInternalServerError, err)
+			return
+		}
+	}
+
+	recipientAddress := &models.AddressAssignment{}
+	if addressAndInfoRequest.SenderSmartID.Valid {
+		recipientAddress, err = recipientAddress.FindPackageAddressWithSmartID(server.DB, recipient, addressAndInfoRequest.Date.Time)
+		if err != nil {
+			responses.ERROR(w, http.StatusInternalServerError, err)
+			return
+		}
+	}
+
+	if addressAndInfoRequest.SenderSmartID.Valid && addressAndInfoRequest.RecipientSmartID.Valid {
+		contacts := models.Contact{}
+		err = contacts.SaveContacts(server.DB, sender.ID, recipient.ID)
+		if err != nil {
+			responses.ERROR(w, http.StatusInternalServerError, err)
+			return
+		}
+	}
+
+	packageDescription, err := addressAndInfoRequest.PackageDescription.SavePackageDescription(server.DB)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	newPackage := models.Package{
+		MailCarrierID:        reqUID,
+		Tracking:             null.StringFrom(addressAndInfoRequest.Tracking),
+		PackageDescriptionID: packageDescription.ID,
+	}
+
+	if addressAndInfoRequest.SenderSmartID.Valid {
+		newPackage.SenderID = uuid.NullUUID{
+			UUID:  sender.ID,
+			Valid: true,
+		}
+	}
+
+	if addressAndInfoRequest.RecipientSmartID.Valid {
+		newPackage.RecipientID = uuid.NullUUID{
+			UUID:  recipient.ID,
+			Valid: true,
+		}
+	}
+
+	err = newPackage.SavePackage(server.DB)
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	addressResponse := &responses.ToAndFromAddressSmartIDResponse{}
+
+	if addressAndInfoRequest.SenderSmartID.Valid {
+		senderResponse := responses.AddressSmartIDResponse{}
+		responses.TranslateSmartAddressResponse(senderAddress, &senderResponse)
+		addressResponse.Sender = senderResponse
+	}
+
+	if addressAndInfoRequest.RecipientSmartID.Valid {
+		recipientResponse := responses.AddressSmartIDResponse{}
+		responses.TranslateSmartAddressResponse(senderAddress, &recipientResponse)
+		addressResponse.Recipient = recipientResponse
+	}
+
+	responses.JSON(w, http.StatusCreated, addressResponse)
+}
+
 // GetPackageSenderAddressBySmartID retrieves a sender's package address using a customer's SmartID
 func (server *Server) GetPackageSenderAddressBySmartID(w http.ResponseWriter, r *http.Request) {
 	reqUID, permission, err := auth.ExtractAPIUserTokenID(r)

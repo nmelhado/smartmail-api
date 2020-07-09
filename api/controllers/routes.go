@@ -45,6 +45,7 @@ func (s *Server) initializeRoutes() {
 	// Package addresses sender and recipient routes
 	s.Router.HandleFunc("/addresses/package/{sender_smart_id}/{recipient_smart_id}/{date}/{tracking}", middlewares.SetMiddlewareJSON(s.GetPackageAddressToAndFromBySmartID)).Methods("GET")
 	s.Router.HandleFunc("/addresses/package/{sender_smart_id}/{recipient_smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetPackageAddressToAndFromBySmartID)).Methods("GET")
+	s.Router.HandleFunc("/addresses/package/tracking", middlewares.SetMiddlewareJSON(s.ProvidePackageAddressToAndFromBySmartID)).Methods("POST")
 
 	// Zip routes
 	s.Router.HandleFunc("/zip/mail/{smart_id}/{date}", middlewares.SetMiddlewareJSON(s.GetMailingZipBySmartID)).Methods("GET")
