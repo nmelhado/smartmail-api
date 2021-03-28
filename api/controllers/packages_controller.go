@@ -49,7 +49,7 @@ func (server *Server) PreviewPackages(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, packagesResponse)
 }
 
-// PreviewPackages gets a collection of a user's recent packages
+// CheckOpenPackages returns a user's open packages
 func (server *Server) CheckOpenPackages(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -202,7 +202,7 @@ type UpdatePackageDescription struct {
 	OrderImage null.String `json:"order_image"`
 }
 
-// UpdatePackageDescription gets a user's packages
+// UpdatePackageDescription updates a package's description
 func (server *Server) UpdatePackageDescription(w http.ResponseWriter, r *http.Request) {
 	uid, permission, err := auth.ExtractAPIUserTokenID(r)
 	if err != nil {
@@ -211,7 +211,7 @@ func (server *Server) UpdatePackageDescription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Get the API user. This allows to get us to get the linked  smartmail account for the next step
+	// Get the API user. This allows to get us to get the linked smartmail account for the next step
 	apiUser := &models.APIUser{}
 	apiUser, err = apiUser.FindAPIUserByID(server.DB, uid)
 	if err != nil {
@@ -219,7 +219,7 @@ func (server *Server) UpdatePackageDescription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	hasPermission := models.RetailPermissions(apiUser.Permission)
+	hasPermission := models.FullPermissions(apiUser.Permission)
 
 	if !hasPermission || string(apiUser.Permission) != permission {
 		fmt.Print("\nUnauthorized 2\n")

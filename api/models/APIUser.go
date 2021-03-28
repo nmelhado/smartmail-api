@@ -18,8 +18,8 @@ type Permission string
 postgres command to create enum:
 CREATE TYPE api_permission AS ENUM (
 	'none',
-	'mail_carrier',
-	'retailer',
+	'full',
+	'limited',
 	'admin',
 	'engineer');
 */
@@ -27,13 +27,13 @@ CREATE TYPE api_permission AS ENUM (
 const (
 	// NoPermission is the default permission type, it gives no access
 	NoPermission Permission = "none"
-	// MailCarrierPermission is the mail carrier permission type, it allows the user to get zip code and address information
-	MailCarrierPermission Permission = "mail_carrier"
-	// RetailerPermission is the retailer permission type, it allows the user to get zip code information
-	RetailerPermission Permission = "retailer"
+	// FullPermission is the full permission type, it allows the user to get zip code and address information
+	FullPermission Permission = "full"
+	// LimitedPermission is the limited permission type, it allows the user to get zip code information
+	LimitedPermission Permission = "limited"
 	// AdminPermission is the admin permission type, it allows the user all information
 	AdminPermission Permission = "admin"
-	// EngineerPermission is the admin permission type, it allows the user all information (may be limited in the future)
+	// EngineerPermission is the engineer permission type, it allows the user all information (may be limited in the future)
 	EngineerPermission Permission = "engineer"
 )
 
@@ -62,38 +62,26 @@ type APIUser struct {
 	UpdatedAt       time.Time     `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
-// FullAddressPermissions returns true if the provided permission level is adequate to access address full information
-func FullAddressPermissions(permission Permission) bool {
+// FullPermissions returns true if the provided permission level is adequate to access address full information
+func FullPermissions(permission Permission) bool {
 	switch permission {
 	case
 		AdminPermission,
 		EngineerPermission,
-		MailCarrierPermission:
+		FullPermission:
 		return true
 	}
 	return false
 }
 
-// ZipPermissions returns true if the provided permission level is adequate to access zip code information
-func ZipPermissions(permission Permission) bool {
+// LimitedPermissions returns true if the provided permission level is adequate to access zip code information
+func LimitedPermissions(permission Permission) bool {
 	switch permission {
 	case
 		AdminPermission,
 		EngineerPermission,
-		MailCarrierPermission,
-		RetailerPermission:
-		return true
-	}
-	return false
-}
-
-// RetailPermissions returns true if the provided permission level is adequate to access zip code information
-func RetailPermissions(permission Permission) bool {
-	switch permission {
-	case
-		AdminPermission,
-		EngineerPermission,
-		RetailerPermission:
+		FullPermission,
+		LimitedPermission:
 		return true
 	}
 	return false
@@ -217,6 +205,19 @@ func (au *APIUser) FindAPIUserByID(db *gorm.DB, uid uuid.UUID) (*APIUser, error)
 		return &APIUser{}, errors.New("User Not Found")
 	}
 	return au, err
+}
+
+// FindAPIUserIDByUsername retrieves the data for an API user ID by using their username
+func (au *APIUser) FindAPIUserIDByUsername(db *gorm.DB, name string) (uid uuid.UUID, err error) {
+	err = db.Debug().Set("gorm:auto_preload", true).Model(APIUser{}).Where("username = ?", name).Take(&au).Error
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			err = errors.New("User Not Found")
+		}
+		return
+	}
+	uid = au.ID
+	return
 }
 
 // UpdateAPIUser updates the values of an API user

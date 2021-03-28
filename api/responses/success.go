@@ -99,6 +99,7 @@ type AddressResponse struct {
 type ToAndFromAddressSmartIDResponse struct {
 	Sender    AddressSmartIDResponse `json:"sender"`
 	Recipient AddressSmartIDResponse `json:"recipient"`
+	Warning   string                 `json:"warning,omitempty"`
 }
 
 // AddressSmartIDResponse is used for creating, updating, and retrieving a single address
